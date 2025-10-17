@@ -1,14 +1,23 @@
-"use client"; // tambahkan ini kalau kamu pakai Next.js App Router
+"use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { FaUser, FaKey } from "react-icons/fa";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = (e) => {
-    e.preventDefault(); // biar tidak reload halaman
-    router.push("/dashboard"); // langsung arahkan ke dashboard
+    e.preventDefault();
+
+    // Simpan nama user ke localStorage agar bisa muncul di dashboard
+    if (name.trim()) {
+      localStorage.setItem("userName", name);
+    }
+
+    router.push("/dashboard");
   };
 
   return (
@@ -16,11 +25,7 @@ export default function LoginPage() {
       {/* Bagian Kiri */}
       <div className="w-full md:w-1/2 bg-[#2D3570] flex flex-col items-center justify-center text-center p-8 text-white">
         <div className="mb-6">
-          <img
-            src="/logo.png"
-            alt="Affectra Logo"
-            className="mx-auto w-40 md:w-60"
-          />
+          <img src="/affectra.png" alt="Affectra Logo" className="mx-auto w-40 md:w-60" />
         </div>
 
         <h1
@@ -29,11 +34,7 @@ export default function LoginPage() {
         >
           AFFECTRA
         </h1>
-
-        <p
-          className="text-sm md:text-lg italic"
-          style={{ fontFamily: "Aref Ruqaa" }}
-        >
+        <p className="text-sm md:text-lg italic" style={{ fontFamily: "Aref Ruqaa" }}>
           “EEG Based Emotion Tracking”
         </p>
       </div>
@@ -47,13 +48,15 @@ export default function LoginPage() {
           Masuk ke akunmu untuk mulai melacak emosi.
         </p>
 
-        {/* Form Login */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="flex items-center border-2 border-[#2D3570] rounded-lg px-3 py-2">
             <FaUser className="text-[#2D3570] mr-2" />
             <input
               type="text"
               placeholder="Nama Lengkap"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
               className="flex-1 outline-none text-gray-700 text-sm md:text-base bg-transparent"
             />
           </div>
@@ -63,6 +66,9 @@ export default function LoginPage() {
             <input
               type="password"
               placeholder="Kata Sandi"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               className="flex-1 outline-none text-gray-700 text-sm md:text-base bg-transparent"
             />
           </div>
@@ -76,7 +82,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-gray-700 text-xs md:text-sm text-center">
-          Sudah punya akun?{" "}
+          Belum punya akun?{" "}
           <a href="/register" className="text-[#2D3570] font-semibold">
             Daftar
           </a>

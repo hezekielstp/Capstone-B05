@@ -1,14 +1,25 @@
-"use client"; // tambahkan jika kamu pakai Next.js App Router
+"use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { FaUser, FaPhone, FaEnvelope, FaKey } from "react-icons/fa";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleRegister = (e) => {
-    e.preventDefault(); // biar tidak reload halaman
-    router.push("/dashboard"); // langsung ke dashboard setelah klik "Daftar"
+    e.preventDefault();
+
+    // Simpan nama user ke localStorage agar bisa muncul di dashboard
+    if (name.trim()) {
+      localStorage.setItem("userName", name);
+    }
+
+    router.push("/dashboard");
   };
 
   return (
@@ -16,26 +27,16 @@ export default function RegisterPage() {
       {/* Bagian Kiri */}
       <div className="w-full md:w-1/2 bg-[#2D3570] flex flex-col items-center justify-center text-center p-8 text-white">
         <div className="mb-6">
-          <img
-            src="/logo.png"
-            alt="Affectra Logo"
-            className="mx-auto w-40 md:w-60"
-          />
+          <img src="/affectra.png" alt="Affectra Logo" className="mx-auto w-40 md:w-60" />
         </div>
 
-        {/* Logo: font Abril Fatface */}
         <h1
           className="text-2xl md:text-4xl font-bold mb-2"
           style={{ fontFamily: "Abril Fatface" }}
         >
           AFFECTRA
         </h1>
-
-        {/* Tagline: font Aref Ruqaa */}
-        <p
-          className="text-sm md:text-lg italic"
-          style={{ fontFamily: "Aref Ruqaa" }}
-        >
+        <p className="text-sm md:text-lg italic" style={{ fontFamily: "Aref Ruqaa" }}>
           “EEG Based Emotion Tracking”
         </p>
       </div>
@@ -51,7 +52,6 @@ export default function RegisterPage() {
           </span>
         </p>
 
-        {/* Form */}
         <form onSubmit={handleRegister} className="space-y-4">
           {/* Nama */}
           <div className="flex items-center border-2 border-[#2D3570] rounded-lg px-3 py-2">
@@ -59,6 +59,9 @@ export default function RegisterPage() {
             <input
               type="text"
               placeholder="Nama Lengkap"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
               className="flex-1 outline-none text-gray-700 text-sm md:text-base bg-transparent"
             />
           </div>
@@ -68,7 +71,9 @@ export default function RegisterPage() {
             <FaPhone className="text-[#2D3570] mr-2" />
             <input
               type="text"
-              placeholder="No.Telepon"
+              placeholder="No. Telepon"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="flex-1 outline-none text-gray-700 text-sm md:text-base bg-transparent"
             />
           </div>
@@ -79,6 +84,8 @@ export default function RegisterPage() {
             <input
               type="email"
               placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="flex-1 outline-none text-gray-700 text-sm md:text-base bg-transparent"
             />
           </div>
@@ -89,6 +96,9 @@ export default function RegisterPage() {
             <input
               type="password"
               placeholder="Kata Sandi"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               className="flex-1 outline-none text-gray-700 text-sm md:text-base bg-transparent"
             />
           </div>
