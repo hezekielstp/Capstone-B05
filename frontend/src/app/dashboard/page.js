@@ -226,71 +226,93 @@ export default function DashboardPage() {
 
         {/* Rekap + Riwayat */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Rekap */}
-          <div>
-            <div className="flex items-center gap-2 mb-3 relative">
-              {/* ✅ teks sudah tidak dobel */}
-              <h3 className="text-[#2D3570] font-semibold text-lg">{selectedRange}</h3>
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="text-[#2D3570] hover:text-[#1F2755] flex items-center"
-              >
-                <FaChevronDown size={14} />
-              </button>
+         {/* Rekap */}
+        <div>
+          <div className="flex items-center gap-2 mb-3 relative">
+            <h3 className="text-[#2D3570] font-semibold text-lg">{selectedRange}</h3>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="text-[#2D3570] hover:text-[#1F2755] flex items-center"
+            >
+              <FaChevronDown size={14} />
+            </button>
 
-              {showDropdown && (
-                <div className="absolute top-7 left-0 bg-white border border-[#E0E5F5] shadow rounded-md z-10">
-                  {["Rekap Emosi 1 Hari", "Rekap Emosi 3 Hari", "Rekap Emosi 7 Hari"].map((range) => (
-                    <button
-                      key={range}
-                      onClick={() => {
-                        setSelectedRange(range);
-                        setShowDropdown(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        selectedRange === range
-                          ? "bg-[#E9ECF6] text-[#2D3570] font-semibold"
-                          : "text-[#2D3570] hover:bg-[#F5F7FB]"
-                      }`}
-                    >
-                      {range}
-                    </button>
-                  ))}
-                </div>
-              )}
+            {showDropdown && (
+              <div className="absolute top-7 left-0 bg-white border border-[#E0E5F5] shadow rounded-md z-10">
+                {["Rekap Emosi 1 Hari", "Rekap Emosi 3 Hari", "Rekap Emosi 7 Hari"].map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => {
+                      setSelectedRange(range);
+                      setShowDropdown(false);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm ${
+                      selectedRange === range
+                        ? "bg-[#E9ECF6] text-[#2D3570] font-semibold"
+                        : "text-[#2D3570] hover:bg-[#F5F7FB]"
+                    }`}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl shadow p-5 min-h-[400px] flex flex-col justify-center items-center transition-transform duration-200 hover:shadow-lg hover:-translate-y-1">
+            <div className="relative flex justify-center items-center h-72 w-full">
+              <ResponsiveContainer width="80%" height="100%">
+                <PieChart>
+                  {/* Lapisan bawah (bayangan 3D) */}
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="52%"
+                    innerRadius={80}
+                    outerRadius={115}
+                    dataKey="value"
+                    fill="#ddd"
+                    stroke="none"
+                    opacity={0.3}
+                    isAnimationActive={false}
+                  />
+                  {/* Lapisan utama (warna utama + animasi) */}
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={110}
+                    dataKey="value"
+                    isAnimationActive={true}
+                  >
+                    {data.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} stroke="none" />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
             </div>
 
-            <div className="bg-white rounded-2xl shadow p-5">
-              <div className="h-52">
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value">
-                      {data.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} stroke="none" />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+            <div className="flex justify-center gap-8 mt-6 text-sm">
+              <div className="flex items-center gap-1 text-[#2D3570]">
+                <span className="w-3 h-3 bg-[#FF5A5A] rounded-full"></span> Negatif
               </div>
-              <div className="flex justify-center gap-6 mt-2 text-sm">
-                <div className="flex items-center gap-1 text-[#2D3570]">
-                  <span className="w-3 h-3 bg-[#FF5A5A] rounded-full"></span> Negatif
-                </div>
-                <div className="flex items-center gap-1 text-[#2D3570]">
-                  <span className="w-3 h-3 bg-[#FFD84D] rounded-full"></span> Positif
-                </div>
-                <div className="flex items-center gap-1 text-[#2D3570]">
-                  <span className="w-3 h-3 bg-[#8CA7FF] rounded-full"></span> Netral
-                </div>
+              <div className="flex items-center gap-1 text-[#2D3570]">
+                <span className="w-3 h-3 bg-[#FFD84D] rounded-full"></span> Positif
+              </div>
+              <div className="flex items-center gap-1 text-[#2D3570]">
+                <span className="w-3 h-3 bg-[#8CA7FF] rounded-full"></span> Netral
               </div>
             </div>
           </div>
+        </div>
 
            {/* Riwayat Sesi */}
           <div>
             <h3 className="text-[#2D3570] font-semibold mb-3 text-lg">Riwayat Sesi</h3>
             <div className="relative">
-              <div className="bg-white rounded-2xl shadow p-5 max-h-[400px] overflow-y-auto scrollbar scrollbar-thumb-[#CBD5E1] scrollbar-track-transparent">
+            <div className="bg-white rounded-2xl shadow p-5 max-h-[400px] overflow-y-auto scrollbar scrollbar-thumb-[#CBD5E1] scrollbar-track-transparent transition-transform duration-200 hover:shadow-lg hover:-translate-y-1">
                 {sessions.map((s, i) => (
                   <div key={i} className="bg-[#F5F7FB] rounded-xl p-3 mb-3 flex flex-col">
                     <div className="flex items-center justify-between">
