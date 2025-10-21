@@ -34,12 +34,34 @@ export default function DashboardPage() {
   const [newNote, setNewNote] = useState("");
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
 
-  // ✅ tiap sesi punya gambar sesuai mood-nya
-  const [sessions, setSessions] = useState([
-    { mood: "Netral", note: "", tempNote: "", showInput: false, showPhoto: false, photo: "/rekaman/netral.png" },
-    { mood: "Negatif", note: "", tempNote: "", showInput: false, showPhoto: false, photo: "/rekaman/negatif.png" },
-    { mood: "Positif", note: "", tempNote: "", showInput: false, showPhoto: false, photo: "/rekaman/positif.png" },
-  ]);
+  // ✅ tiap sesi punya gambar sesuai mood-nya, lengkap dengan waktu & tanggal (10 sesi acak dgn jarak waktu 10 detik)
+  const now = new Date();
+  const moods = ["Positif", "Netral", "Negatif"];
+  const emojiPaths = {
+    Positif: "/rekaman/positif.png",
+    Netral: "/rekaman/netral.png",
+    Negatif: "/rekaman/negatif.png",
+  };
+
+  const [sessions, setSessions] = useState(() => {
+    return Array.from({ length: 10 }, (_, i) => {
+      const mood = moods[Math.floor(Math.random() * moods.length)];
+      const time = new Date(now.getTime() - i * 10000).toLocaleTimeString("id-ID", {
+        hour12: false,
+      });
+      const date = now.toLocaleDateString("id-ID");
+      return {
+        mood,
+        note: "",
+        tempNote: "",
+        showInput: false,
+        showPhoto: false,
+        photo: emojiPaths[mood],
+        time,
+        date,
+      };
+    });
+  });
 
   const emojiImages = {
     Positif: "/positif.png",
@@ -264,90 +286,97 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Riwayat Sesi */}
+           {/* Riwayat Sesi */}
           <div>
             <h3 className="text-[#2D3570] font-semibold mb-3 text-lg">Riwayat Sesi</h3>
-            <div className="bg-white rounded-2xl shadow p-5 max-h-[400px] overflow-y-auto">
-              {sessions.map((s, i) => (
-                <div key={i} className="bg-[#F5F7FB] rounded-xl p-3 mb-3 flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img src={emojiImages[s.mood]} alt={s.mood} className="w-10 h-10 object-contain" />
-                      <div>
-                        <p className="font-semibold text-[#2D3570]">{s.mood}</p>
-                        <p className="text-xs text-gray-500">21:00:10 • 03-06-2025</p>
+            <div className="relative">
+              <div className="bg-white rounded-2xl shadow p-5 max-h-[400px] overflow-y-auto scrollbar scrollbar-thumb-[#CBD5E1] scrollbar-track-transparent">
+                {sessions.map((s, i) => (
+                  <div key={i} className="bg-[#F5F7FB] rounded-xl p-3 mb-3 flex flex-col">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <img src={emojiImages[s.mood]} alt={s.mood} className="w-10 h-10 object-contain" />
+                        <div>
+                          <p className="font-semibold text-[#2D3570]">{s.mood}</p>
+                          <p className="text-xs text-gray-500">{s.time} • {s.date}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => handleToggleInput(i)} className="text-gray-500 hover:text-[#2D3570]">
-                        <FaEdit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleShowPhoto(i)}
-                        className="text-[#2D3570] text-sm font-medium hover:underline"
-                      >
-                        Lihat Foto
-                      </button>
-                    </div>
-                  </div>
-
-                  {s.showInput && (
-                    <div className="mt-3 bg-white rounded-lg border border-[#E0E5F5] p-2">
-                      <textarea
-                        value={s.tempNote}
-                        onChange={(e) => handleTempNoteChange(i, e.target.value)}
-                        placeholder="Tulis catatan disini..."
-                        className="w-full text-[#2D3570] text-sm outline-none resize-none"
-                      />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button
-                          onClick={() => handleSaveNote(i)}
-                          className="bg-[#2D3570] text-white px-3 py-1 rounded-md text-sm font-semibold hover:bg-[#1F2755]"
-                        >
-                          Simpan
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => handleToggleInput(i)} className="text-gray-500 hover:text-[#2D3570]">
+                          <FaEdit size={14} />
                         </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {s.note && !s.showInput && (
-                    <div className="mt-2 flex justify-between items-start bg-white p-2 rounded-lg border border-[#E0E5F5]">
-                      <p className="text-sm text-[#2D3570] flex-1">{s.note}</p>
-                      <button
-                        onClick={() => handleDeleteNote(i)}
-                        className="text-[#FF5A5A] hover:text-red-700 ml-2"
-                      >
-                        <FaTrashAlt size={14} />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* ✅ Popup Foto per sesi */}
-                  {s.showPhoto && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-                      <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-md relative">
                         <button
                           onClick={() => handleShowPhoto(i)}
-                          className="absolute top-3 right-3 text-[#2D3570] hover:text-[#1F2755]"
+                          className="text-[#2D3570] text-sm font-medium hover:underline"
                         >
-                          <FaTimes size={18} />
+                          Lihat Foto
                         </button>
-                        <h3 className="text-[#2D3570] font-semibold mb-3 text-lg text-center">
-                          Hasil Rekaman Foto
-                        </h3>
-                        <img
-                          src={s.photo}
-                          alt={`Foto ${s.mood}`}
-                          className="w-full h-64 object-cover rounded-xl"
-                        />
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {s.showInput && (
+                      <div className="mt-3 bg-white rounded-lg border border-[#E0E5F5] p-2">
+                        <textarea
+                          value={s.tempNote}
+                          onChange={(e) => handleTempNoteChange(i, e.target.value)}
+                          placeholder="Tulis catatan disini..."
+                          className="w-full text-[#2D3570] text-sm outline-none resize-none"
+                        />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button
+                            onClick={() => handleSaveNote(i)}
+                            className="bg-[#2D3570] text-white px-3 py-1 rounded-md text-sm font-semibold hover:bg-[#1F2755]"
+                          >
+                            Simpan
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {s.note && !s.showInput && (
+                      <div className="mt-2 flex justify-between items-start bg-white p-2 rounded-lg border border-[#E0E5F5]">
+                        <p className="text-sm text-[#2D3570] flex-1">{s.note}</p>
+                        <button
+                          onClick={() => handleDeleteNote(i)}
+                          className="text-[#FF5A5A] hover:text-red-700 ml-2"
+                        >
+                          <FaTrashAlt size={14} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* ✅ Popup Foto per sesi */}
+                    {s.showPhoto && (
+                      <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+                        <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-md relative">
+                          <button
+                            onClick={() => handleShowPhoto(i)}
+                            className="absolute top-3 right-3 text-[#2D3570] hover:text-[#1F2755]"
+                          >
+                            <FaTimes size={18} />
+                          </button>
+                          <h3 className="text-[#2D3570] font-semibold mb-3 text-lg text-center">
+                            Hasil Rekaman Foto
+                          </h3>
+                          <img
+                            src={s.photo}
+                            alt={`Foto ${s.mood}`}
+                            className="w-full h-64 object-cover rounded-xl"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* 👇 Icon Scroll Indicator di bawah */}
+              <div className="absolute bottom-1 left-0 right-0 flex justify-center pointer-events-none">
+                <FaChevronDown className="text-gray-400 animate-bounce" size={18} />
+              </div>
             </div>
           </div>
-        </div>
+        </div> {/* ✅ penutup grid Rekap + Riwayat */}
 
         {/* Catatan */}
         <div>
