@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
+import noteRoutes from "./routes/notesRoutes.js";
 import cors from "cors";
 
 // Inisialisasi konfigurasi environment (.env)
@@ -19,6 +20,7 @@ connectDB();
 
 // Routing utama
 app.use("/api/users", userRoutes);
+app.use("/api/notes", noteRoutes);
 
 // Jalankan server
 const PORT = process.env.PORT || 5001;
