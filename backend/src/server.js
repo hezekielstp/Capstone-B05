@@ -1,18 +1,27 @@
 import express from "express";
-import notesRoutes from "../src/routes/notesRoutes.js"
-import { connectDB } from "./config/db.js";
 import dotenv from "dotenv";
+import { connectDB } from "./config/db.js";
+import userRoutes from "./routes/userRoutes.js";
+import cors from "cors";
 
+// Inisialisasi konfigurasi environment (.env)
 dotenv.config();
 
-const app = express ()
-const PORT = process.env.PORT  || 5001;
+// Inisialisasi express app
+const app = express();
+app.use(cors());
 
-app.use("/api/notes", notesRoutes)
+// Middleware untuk membaca JSON dari request body
+app.use(express.json());
 
+// Tes koneksi database
 connectDB();
 
-app.listen(5001, () =>{
-    console.log("Server started on PORT :", PORT)
-});
+// Routing utama
+app.use("/api/users", userRoutes);
 
+// Jalankan server
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`✅ Server started on PORT: ${PORT}`);
+});

@@ -11,15 +11,44 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleRegister = (e) => {
+  // 🔹 Integrasi ke backend MongoDB
+  const handleRegister = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (name.trim()) {
-      localStorage.setItem("userName", name);
+    try {
+      const response = await fetch("http://localhost:5001/api/users/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          phoneNumber: phone,
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Pendaftaran gagal");
+      }
+
+      // Simpan nama ke localStorage (tetap seperti logika lama)
+      if (name.trim()) {
+        localStorage.setItem("userName", name);
+      }
+
+      alert("✅ Pendaftaran berhasil!");
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("❌ Register error:", err);
+      setError(err.message);
     }
-
-    router.push("/dashboard");
   };
 
   return (
@@ -36,7 +65,6 @@ export default function RegisterPage() {
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        {/* Efek bubble dekoratif */}
         <motion.div
           className="absolute w-40 h-40 bg-[#5A6BF7]/20 rounded-full blur-2xl -top-10 -left-10"
           animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
@@ -112,7 +140,6 @@ export default function RegisterPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
         >
-          {/* Nama */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="flex items-center border-2 border-[#2D3570] rounded-lg px-3 py-2 bg-transparent"
@@ -128,7 +155,6 @@ export default function RegisterPage() {
             />
           </motion.div>
 
-          {/* Telepon */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="flex items-center border-2 border-[#2D3570] rounded-lg px-3 py-2"
@@ -143,7 +169,6 @@ export default function RegisterPage() {
             />
           </motion.div>
 
-          {/* Email */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="flex items-center border-2 border-[#2D3570] rounded-lg px-3 py-2"
@@ -158,7 +183,6 @@ export default function RegisterPage() {
             />
           </motion.div>
 
-          {/* Password */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="flex items-center border-2 border-[#2D3570] rounded-lg px-3 py-2"
@@ -174,7 +198,6 @@ export default function RegisterPage() {
             />
           </motion.div>
 
-          {/* Tombol Daftar */}
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
@@ -184,6 +207,11 @@ export default function RegisterPage() {
             Daftar
           </motion.button>
         </motion.form>
+
+        {/* Pesan error jika gagal */}
+        {error && (
+          <p className="text-red-600 text-center mt-4 text-sm">{error}</p>
+        )}
 
         <motion.p
           className="mt-6 text-gray-700 text-xs md:text-sm text-center"

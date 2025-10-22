@@ -7,17 +7,41 @@ import { FaUser, FaKey } from "react-icons/fa";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (name.trim()) {
-      localStorage.setItem("userName", name);
+    try {
+      // ✅ Gunakan endpoint dari server kamu
+      const res = await fetch("http://localhost:5001/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }), // backend menerima email, bukan name
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Login gagal, periksa kembali data Anda.");
+        return;
+      }
+
+      // ✅ Simpan token dan nama user di localStorage (sementara)
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userName", data.user.name);
+      localStorage.setItem("userEmail", data.user.email);
+      localStorage.setItem("userPhone", data.user.phone);
+
+      // ✅ Arahkan ke dashboard
+      router.push("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError("Terjadi kesalahan pada server.");
     }
-
-    router.push("/dashboard");
   };
 
   return (
@@ -34,7 +58,6 @@ export default function LoginPage() {
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        {/* Efek bubble dinamis */}
         <motion.div
           className="absolute w-48 h-48 bg-[#5A6BF7]/20 rounded-full blur-3xl -top-10 -left-10"
           animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
@@ -114,10 +137,10 @@ export default function LoginPage() {
           >
             <FaUser className="text-[#2D3570] mr-2" />
             <input
-              type="text"
-              placeholder="Nama Lengkap"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="flex-1 outline-none text-gray-700 text-sm md:text-base bg-transparent"
             />
@@ -146,6 +169,10 @@ export default function LoginPage() {
           >
             Masuk
           </motion.button>
+
+          {error && (
+            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+          )}
         </motion.form>
 
         <motion.p
@@ -155,7 +182,10 @@ export default function LoginPage() {
           transition={{ delay: 1 }}
         >
           Belum punya akun?{" "}
-          <a href="/register" className="text-[#2D3570] font-semibold hover:underline">
+          <a
+            href="/register"
+            className="text-[#2D3570] font-semibold hover:underline"
+          >
             Daftar
           </a>
         </motion.p>
