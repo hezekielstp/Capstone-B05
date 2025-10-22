@@ -1,102 +1,158 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { motion } from "framer-motion";
+import { FaBrain, FaSmile, FaChartPie } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+
+export default function LandingPage() {
+  const router = useRouter();
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
+    <div className="font-sans bg-gradient-to-b from-[#4A54A3] via-[#5C6CD9] to-[#8A93FF] text-white min-h-screen flex flex-col">
+      {/* 🔹 Navbar */}
+      <nav className="flex justify-between items-center px-8 py-4 bg-[#404A99]/50 backdrop-blur-md shadow-lg fixed w-full top-0 z-50 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <img src="/affectra.png" alt="Affectra Logo" className="w-10 h-10" />
+          <h1 className="text-2xl font-bold tracking-wide bg-gradient-to-r from-[#A0B4FF] to-[#FFD84D] text-transparent bg-clip-text">
+            AFFECTRA
+          </h1>
+        </div>
+        <div className="hidden md:flex gap-8 text-[#E3E8FF]">
+          <a href="#features" className="hover:text-[#FFD84D] font-medium transition">
+            Fitur
           </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+          <a href="#about" className="hover:text-[#FFD84D] font-medium transition">
+            Tentang
+          </a>
+          <a href="#team" className="hover:text-[#FFD84D] font-medium transition">
+            Tim
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => router.push("/login")}
+          className="bg-gradient-to-r from-[#FFD84D] to-[#FFB347] text-[#343C6A] px-5 py-2 rounded-xl font-semibold hover:scale-105 hover:shadow-lg transition"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          Masuk
+        </button>
+      </nav>
+
+      {/* 🔹 Hero Section */}
+      <section className="flex flex-col md:flex-row items-center justify-between px-8 md:px-20 py-32 md:py-40 mt-16">
+        <motion.div
+          className="md:w-1/2 mb-12 md:mb-0"
+          initial={{ opacity: 0, x: -80 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1 }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-white">
+            Lacak Emosi Anda <br /> dengan{" "}
+            <span className="bg-gradient-to-r from-[#FFD84D] to-[#FF82A9] text-transparent bg-clip-text">
+              AFFECTRA
+            </span>
+          </h1>
+          <p className="text-lg text-[#E0E4FF] mb-8 leading-relaxed max-w-xl">
+            Platform berbasis AI yang mendeteksi emosi Anda melalui sinyal otak (EEG)
+            dan menampilkannya secara real-time dengan visualisasi yang elegan dan intuitif.
+          </p>
+          <button
+            onClick={() => router.push("/login")}
+            className="bg-gradient-to-r from-[#FFD84D] to-[#FFB347] text-[#2D3570] px-6 py-3 rounded-xl font-semibold text-lg shadow-lg hover:scale-105 hover:shadow-2xl transition"
+          >
+            Mulai Sekarang
+          </button>
+        </motion.div>
+
+        <motion.div
+          className="md:w-1/2 flex justify-center"
+          initial={{ opacity: 0, x: 80 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1 }}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+          <motion.img
+            src="affectralengkap.png"
+            alt="Hero"
+            className="w-[85%] md:w-[450px] object-contain drop-shadow-[0_0_40px_rgba(255,216,77,0.4)]"
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.5 }}
           />
-          Go to nextjs.org →
-        </a>
+        </motion.div>
+      </section>
+
+      {/* 🔹 Features Section */}
+      <section
+        id="features"
+        className="py-20 px-8 md:px-20 bg-gradient-to-b from-[#F5F7FB] via-[#E9EBFF] to-[#F6F8FF] text-[#2D3570]"
+      >
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-[#343C6A] to-[#5A6BF7] text-transparent bg-clip-text">
+          Fitur Unggulan
+        </h2>
+        <div className="grid md:grid-cols-3 gap-10">
+          <motion.div
+            className="bg-white rounded-2xl shadow-xl p-8 text-center hover:shadow-2xl transition border border-[#E0E3FA]"
+            whileHover={{ scale: 1.05 }}
+          >
+            <FaBrain size={50} className="mx-auto mb-4 text-[#5A6BF7]" />
+            <h3 className="text-xl font-semibold mb-2 text-[#2D3570]">
+              Deteksi Emosi Otomatis
+            </h3>
+            <p className="text-[#5B5E8F] text-sm leading-relaxed">
+              Mendeteksi emosi dari data EEG dengan akurasi tinggi dan menampilkannya secara real-time.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="bg-white rounded-2xl shadow-xl p-8 text-center hover:shadow-2xl transition border border-[#E0E3FA]"
+            whileHover={{ scale: 1.05 }}
+          >
+            <FaSmile size={50} className="mx-auto mb-4 text-[#FFD84D]" />
+            <h3 className="text-xl font-semibold mb-2 text-[#2D3570]">
+              Visualisasi Interaktif
+            </h3>
+            <p className="text-[#5B5E8F] text-sm leading-relaxed">
+              Antarmuka visual intuitif membantu Anda memahami emosi secara menyenangkan.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="bg-white rounded-2xl shadow-xl p-8 text-center hover:shadow-2xl transition border border-[#E0E3FA]"
+            whileHover={{ scale: 1.05 }}
+          >
+            <FaChartPie size={50} className="mx-auto mb-4 text-[#FF5A91]" />
+            <h3 className="text-xl font-semibold mb-2 text-[#2D3570]">
+              Rekap Emosi
+            </h3>
+            <p className="text-[#5B5E8F] text-sm leading-relaxed">
+              Lihat perbandingan dan tren emosimu selama 1, 3, dan 7 hari terakhir dengan tampilan menarik.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 🔹 About Section */}
+      <section
+        id="about"
+        className="py-20 px-8 md:px-20 bg-[#F5F7FB] text-center text-[#2D3570]"
+      >
+        <motion.h2
+          className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-[#5A6BF7] to-[#FF5A91] text-transparent bg-clip-text"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          Tentang AFFECTRA
+        </motion.h2>
+        <p className="text-[#4B4F78] max-w-3xl mx-auto leading-relaxed text-base">
+          AFFECTRA adalah sistem berbasis EEG yang dirancang untuk mengenali dan
+          menampilkan emosi manusia secara ilmiah. Dengan kombinasi AI dan desain antarmuka
+          yang humanis, AFFECTRA membantu Anda memahami keseharian emosional dengan cara yang menyenangkan dan bermakna.
+        </p>
+      </section>
+
+      {/* 🔹 Footer */}
+      <footer className="bg-gradient-to-r from-[#343C6A] to-[#5A6BF7] text-white py-6 text-center">
+        <p className="text-sm opacity-90">
+          © {new Date().getFullYear()} <span className="font-semibold">AFFECTRA</span> Team — Capstone Project B05
+        </p>
       </footer>
     </div>
   );
