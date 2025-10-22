@@ -6,7 +6,7 @@ import numpy as np
 app = FastAPI()
 
 model = joblib.load("saved_models/ensemble_model.pkl")
-scaler = joblib.load("saved_models/scaler.pkl")
+# scaler = joblib.load("saved_models/scaler.pkl")
 
 @app.post("/predict")
 def predict(features: list[float]):
