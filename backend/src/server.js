@@ -9,7 +9,7 @@ dotenv.config();
 
 // Inisialisasi express app
 const app = express();
-app.use(cors());
+app.use(cors());    
 
 // Middleware untuk membaca JSON dari request body
 app.use(express.json());
