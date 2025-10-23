@@ -27,14 +27,39 @@ export default function DashboardPage() {
   const sidebarRef = useRef(null);
 
   // ============================================================
-  // 🔹 1. Fetch user dari token (ambil nama)
+  // 🔹 1. Fetch user dari token (ambil nama) + fallback setelah register
   // ============================================================
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) return;
 
+        // ✅ kalau token belum ada (baru register)
+        if (!token) {
+          let storedName = localStorage.getItem("userName");
+
+          // kalau belum sempat tersimpan, cek ulang tiap 0.5 detik selama 2 detik
+          if (!storedName) {
+            let retries = 0;
+            const interval = setInterval(() => {
+              retries++;
+              storedName = localStorage.getItem("userName");
+              if (storedName || retries >= 4) {
+                clearInterval(interval);
+                if (storedName) {
+                  setUserName(storedName);
+                  setFirstName(storedName.split(" ")[0]);
+                }
+              }
+            }, 500);
+          } else {
+            setUserName(storedName);
+            setFirstName(storedName.split(" ")[0]);
+          }
+          return;
+        }
+
+        // ✅ kalau token ada (sudah login)
         const res = await fetch("http://localhost:5001/api/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -43,6 +68,7 @@ export default function DashboardPage() {
         if (res.ok) {
           setUserName(data.name || "User");
           setFirstName(data.name?.split(" ")[0] || "User");
+          localStorage.setItem("userName", data.name || "User");
         } else {
           console.error("Gagal ambil user:", data.message);
         }
@@ -118,14 +144,13 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <main className="px-4 sm:px-6 md:px-8 py-6">
-          {/* Header (dengan bar putih abu di belakang) */}
+          {/* Header (dengan bar abu-abu di belakang) */}
           <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="bg-[#E9ECF6] rounded-2xl shadow p-4 sm:p-5 mb-6 flex items-center justify-between"
-            >
-
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="bg-[#E9ECF6] rounded-2xl shadow p-4 sm:p-5 mb-6 flex items-center justify-between"
+          >
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -156,7 +181,12 @@ export default function DashboardPage() {
 
           {/* Baris atas: Emosi + Rekaman */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <EmosiTerakhir emotion={emotion} time={time} date={date} firstName={firstName} />
+            <EmosiTerakhir
+              emotion={emotion}
+              time={time}
+              date={date}
+              firstName={firstName}
+            />
             <RekamFoto />
           </div>
 
