@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import noteRoutes from "./routes/notesRoutes.js";
+import eegSessionRoutes from "./routes/eegSessionRoutes.js";
 import cors from "cors";
 
 // Inisialisasi konfigurasi environment (.env)
@@ -19,6 +20,7 @@ app.use(express.json());
 connectDB();
 
 // Routing utama
+app.use("/api/sessions", eegSessionRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notes", noteRoutes);
 

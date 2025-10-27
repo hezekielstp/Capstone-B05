@@ -1,36 +1,83 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaTrashAlt } from "react-icons/fa";
 
 export default function CatatanAnda() {
   const fadeUp = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
-  const [notes, setNotes] = useState([
-    "Malam ini saya bersantai dan melihat bunga-bunga di taman sepertinya membuat saya menjadi sedikit lebih tenang dan happy.",
-  ]);
+
+  const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
 
-  const handleAddNote = () => {
-    if (newNote.trim()) {
-      setNotes([...notes, newNote]);
-      setNewNote("");
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  // ✅ Ambil catatan saat pertama kali page dibuka
+  useEffect(() => {
+    async function fetchNotes() {
+      try {
+        const res = await fetch(`${API_URL}/api/notes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await res.json();
+        setNotes(data.data || []); // backend mengirim { data: [...] }
+      } catch (err) {
+        console.error("Gagal mengambil catatan:", err);
+      }
+    }
+
+    if (token) fetchNotes();
+  }, [token]);
+
+  // ✅ Tambah catatan ke database
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/notes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ noteContent: newNote, noteType: "general" }),
+      });
+
+      const data = await res.json();
+
+      if (data.data) {
+        setNotes([...notes, data.data]); // Tambah note baru ke UI
+        setNewNote("");
+      }
+    } catch (err) {
+      console.error("Gagal menambah catatan:", err);
     }
   };
 
-  const handleDeleteMainNote = (i) => {
-    const updated = notes.filter((_, index) => index !== i);
-    setNotes(updated);
+  // ✅ Hapus catatan dari database
+  const handleDeleteMainNote = async (id) => {
+    try {
+      await fetch(`${API_URL}/api/notes/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setNotes(notes.filter((n) => n._id !== id));
+    } catch (err) {
+      console.error("Gagal menghapus catatan:", err);
+    }
   };
 
   return (
     <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ duration: 0.28, delay: 0.06 }}>
       <h3 className="text-[#2D3570] font-semibold mb-3 text-lg">Catatan Anda</h3>
       <div className="bg-white rounded-2xl shadow p-5">
-        {notes.map((note, i) => (
-          <div key={i} className="flex items-center justify-between bg-[#F5F7FB] rounded-lg p-3 mb-3">
-            <p className="text-sm text-gray-700 flex-1">{note}</p>
+        {notes.map((note) => (
+          <div key={note._id} className="flex items-center justify-between bg-[#F5F7FB] rounded-lg p-3 mb-3">
+            <p className="text-sm text-gray-700 flex-1">{note.noteContent}</p>
             <button
-              onClick={() => handleDeleteMainNote(i)}
+              onClick={() => handleDeleteMainNote(note._id)}
               className="text-[#FF5A5A] hover:text-red-700 ml-3"
             >
               <FaTrashAlt />

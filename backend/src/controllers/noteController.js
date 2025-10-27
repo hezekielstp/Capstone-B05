@@ -12,19 +12,14 @@ export async function createNote(req, res) {
       return res.status(400).json({ message: "Isi catatan tidak boleh kosong" });
     }
 
-    const newNote = new Note({
+    const newNote = await Note.create({
       userId,
       sessionId: sessionId || null,
       noteType: noteType || "general",
       noteContent: noteContent.trim(),
     });
 
-    await newNote.save();
-
-    res.status(201).json({
-      message: "Catatan berhasil disimpan",
-      note: newNote,
-    });
+    return res.status(201).json({ data: newNote }); // ✅ FORMAT SESUAI FRONTEND
   } catch (error) {
     console.error("❌ Error createNote:", error);
     res.status(500).json({ message: "Gagal menyimpan catatan" });
@@ -42,13 +37,12 @@ export async function getNotes(req, res) {
       .populate("sessionId", "emotionLabel createdAt")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(notes);
+    return res.status(200).json({ data: notes }); // ✅ FORMAT SESUAI FRONTEND
   } catch (error) {
     console.error("❌ Error getNotes:", error);
     res.status(500).json({ message: "Gagal mengambil catatan" });
   }
 }
-
 /* ============================
    🔹 HAPUS NOTE
 ============================ */

@@ -26,6 +26,15 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    setUserName("User");
+    setFirstName("User");
+    setShowLogoutPopup(false);
+    router.push("/login");
+  };
+
   // ============================================================
   // 🔹 1. Fetch user dari token (ambil nama) + fallback setelah register
   // ============================================================
@@ -201,11 +210,10 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Popup Logout */}
       <LogoutPopup
         show={showLogoutPopup}
         onCancel={() => setShowLogoutPopup(false)}
-        onConfirm={() => router.push("/login")}
+        onConfirm={handleLogout}
       />
     </div>
   );

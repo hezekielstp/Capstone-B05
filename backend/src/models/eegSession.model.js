@@ -1,3 +1,4 @@
+// models/eegSession.model.js
 import mongoose from "mongoose";
 
 const eegSessionSchema = new mongoose.Schema(
@@ -7,12 +8,22 @@ const eegSessionSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    startTime: { type: Date, required: true },
-    endTime: { type: Date },
-    notes: { type: String },
+    mood: {
+      type: String,
+      enum: ["Positif", "Netral", "Negatif"],
+      required: true,
+    },
+    note: {
+      type: String,
+      default: "",
+    },
+    photoPath: {
+      type: String, // contoh: "/rekaman/gambarSesi12.png"
+      required: true,
+    },
   },
   { timestamps: true }
 );
 
-const EEGSession = mongoose.model("EEGSession", eegSessionSchema);
-export default EEGSession;
+export default mongoose.models.EEGSession ||
+  mongoose.model("EEGSession", eegSessionSchema);

@@ -8,7 +8,7 @@ import nodemailer from "nodemailer"; // ✅ tambahan baru untuk kirim email
 ================================ */
 export async function getAllNotes(req, res) {
   try {
-    const notes = []; // nanti bisa isi logic ambil dari DB
+    const notes = []; // nanti b isa isi logic ambil dari DB
     res.status(200).json(notes);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -20,37 +20,32 @@ export async function getAllNotes(req, res) {
 ================================ */
 export async function registerUser(req, res) {
   try {
-    const { name, email, password, phoneNumber, birthDate, gender } = req.body;
+    const { name, email, password, phoneNumber } = req.body;
 
-    // 🔸 Validasi input
     if (!name || !email || !password || !phoneNumber) {
       return res.status(400).json({ message: "Data tidak lengkap" });
     }
 
-    // 🔸 Cek user sudah ada
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phoneNumber }],
-    });
+    const existingUser = await User.findOne({ $or: [{ email }, { phoneNumber }] });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "Email atau nomor HP sudah terdaftar" });
+      return res.status(400).json({ message: "Email atau nomor HP sudah terdaftar" });
     }
 
-    // 🔸 Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 🔸 Simpan user baru
     const user = new User({
       name,
       email,
       phoneNumber,
       passwordHash: hashedPassword,
-      birthDate,
-      gender,
     });
 
     await user.save();
+
+    // ✅ BUAT TOKEN OTOMATIS
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "rahasia", {
+      expiresIn: "1d",
+    });
 
     res.status(201).json({
       message: "Registrasi berhasil",
@@ -60,6 +55,7 @@ export async function registerUser(req, res) {
         email: user.email,
         phoneNumber: user.phoneNumber,
       },
+      token, // ✅ kirim token ke frontend
     });
   } catch (error) {
     console.error("❌ Register error:", error);
