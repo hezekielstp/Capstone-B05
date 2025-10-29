@@ -1,9 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrashAlt, FaTimes, FaChevronDown } from "react-icons/fa";
 
-export default function RiwayatSesi() {
+export default function RiwayatSesi({
+  latestEmotion,
+  latestTime,
+  latestDate,
+  latestPhoto,
+}) {
   const fadeUp = { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } };
 
   const moods = ["Positif", "Netral", "Negatif"];
@@ -17,28 +22,56 @@ export default function RiwayatSesi() {
     Negatif: "/negatif.png",
     Netral: "/netral.png",
   };
+
   const now = new Date();
 
-  const [sessions, setSessions] = useState(() =>
-    Array.from({ length: 10 }, (_, i) => {
-      const mood = moods[Math.floor(Math.random() * moods.length)];
-      const time = new Date(now.getTime() - i * 10000).toLocaleTimeString("id-ID", {
-        hour12: false,
-      });
-      const date = now.toLocaleDateString("id-ID");
-      return {
-        mood,
-        note: "",
-        tempNote: "",
-        showInput: false,
-        photo: emojiPaths[mood],
-        time,
-        date,
-      };
-    })
-  );
+  // === SIMULASI EEG 7 HARI TERAKHIR ===
+  const [sessions, setSessions] = useState(() => {
+    const allSessions = [];
+    const intervalMs = 10000;
+    const durationPerDay = 30 * 60 * 1000;
+    const entriesPerDay = durationPerDay / intervalMs;
 
-  // Modal foto state terpisah
+    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+      const dayDate = new Date(now);
+      dayDate.setDate(now.getDate() - dayOffset);
+      const baseTime = new Date(dayDate);
+      baseTime.setHours(9, 0, 0, 0);
+
+      for (let i = 0; i < entriesPerDay; i++) {
+        const timestamp = new Date(baseTime.getTime() + i * intervalMs);
+        const mood = moods[Math.floor(Math.random() * moods.length)];
+        allSessions.push({
+          mood,
+          note: "",
+          tempNote: "",
+          showInput: false,
+          photo: emojiPaths[mood],
+          time: timestamp.toLocaleTimeString("id-ID", { hour12: false }),
+          date: timestamp.toLocaleDateString("id-ID"),
+          timestamp,
+        });
+      }
+    }
+    return allSessions.sort((a, b) => b.timestamp - a.timestamp);
+  });
+
+  // 🟢 sinkronisasi entri terbaru dengan emosi & foto real-time
+  useEffect(() => {
+    if (!latestEmotion || !latestTime || !latestDate) return;
+    setSessions((prev) => {
+      const updated = [...prev];
+      if (updated.length > 0) {
+        updated[0].mood = latestEmotion;
+        updated[0].time = latestTime;
+        updated[0].date = latestDate;
+        updated[0].photo = latestPhoto || "/flowers.png";
+        updated[0].timestamp = new Date();
+      }
+      return updated;
+    });
+  }, [latestEmotion, latestTime, latestDate, latestPhoto]);
+
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(null);
 
   const handleToggleInput = (i) => {
@@ -69,17 +102,14 @@ export default function RiwayatSesi() {
     setSessions(updated);
   };
 
-  const handleShowPhoto = (i) => {
-    setCurrentPhotoIndex(i);
-  };
-
-  const handleClosePhoto = () => {
-    setCurrentPhotoIndex(null);
-  };
+  const handleShowPhoto = (i) => setCurrentPhotoIndex(i);
+  const handleClosePhoto = () => setCurrentPhotoIndex(null);
 
   return (
     <div>
-      <h3 className="text-[#2D3570] font-semibold mb-3 text-lg">Riwayat Sesi</h3>
+      <h3 className="text-[#2D3570] font-semibold mb-3 text-lg">
+        Riwayat Sesi (7 Hari Terakhir)
+      </h3>
       <div className="relative">
         <motion.div
           variants={fadeUp}
@@ -92,7 +122,11 @@ export default function RiwayatSesi() {
             <div key={i} className="bg-[#F5F7FB] rounded-xl p-3 mb-3 flex flex-col">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <img src={emojiImages[s.mood]} alt={s.mood} className="w-10 h-10 object-contain" />
+                  <img
+                    src={emojiImages[s.mood]}
+                    alt={s.mood}
+                    className="w-10 h-10 object-contain"
+                  />
                   <div>
                     <p className="font-semibold text-[#2D3570]">{s.mood}</p>
                     <p className="text-xs text-gray-500">
@@ -101,7 +135,10 @@ export default function RiwayatSesi() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => handleToggleInput(i)} className="text-gray-500 hover:text-[#2D3570]">
+                  <button
+                    onClick={() => handleToggleInput(i)}
+                    className="text-gray-500 hover:text-[#2D3570]"
+                  >
                     <FaEdit size={14} />
                   </button>
                   <button
@@ -135,7 +172,10 @@ export default function RiwayatSesi() {
               {s.note && !s.showInput && (
                 <div className="mt-2 flex justify-between items-start bg-white p-2 rounded-lg border border-[#E0E5F5]">
                   <p className="text-sm text-[#2D3570] flex-1">{s.note}</p>
-                  <button onClick={() => handleDeleteNote(i)} className="text-[#FF5A5A] hover:text-red-700 ml-2">
+                  <button
+                    onClick={() => handleDeleteNote(i)}
+                    className="text-[#FF5A5A] hover:text-red-700 ml-2"
+                  >
                     <FaTrashAlt size={14} />
                   </button>
                 </div>
@@ -149,7 +189,7 @@ export default function RiwayatSesi() {
         </div>
       </div>
 
-      {/* Modal foto di luar loop */}
+      {/* Modal Foto */}
       <AnimatePresence>
         {currentPhotoIndex !== null && (
           <motion.div

@@ -202,7 +202,13 @@ export default function DashboardPage() {
           {/* Rekap + Riwayat */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <RekapEmosi />
-            <RiwayatSesi />
+            
+            {/* 🔹 REVISI: kirim data dari EmosiTerakhir ke RiwayatSesi */}
+            <RiwayatSesi
+              latestEmotion={emotion}
+              latestTime={time}
+              latestDate={date}
+            />
           </div>
 
           {/* Catatan */}

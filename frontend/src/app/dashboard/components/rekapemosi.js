@@ -1,36 +1,77 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { FaChevronDown } from "react-icons/fa";
 
+// ===== DUMMY EEG REALISTIC: 7 HARI × 30 MENIT/HARI × 10 DETIK =====
+const generateDummyRiwayat = () => {
+  const moods = ["Positif", "Netral", "Negatif"];
+  const now = new Date();
+  const intervalMs = 10000; // tiap 10 detik
+  const durationPerDay = 30 * 60 * 1000; // 30 menit per hari
+  const entriesPerDay = durationPerDay / intervalMs; // 180 entri per hari
+
+  const data = [];
+  for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+    const dayDate = new Date(now);
+    dayDate.setDate(now.getDate() - dayOffset);
+    const baseTime = new Date(dayDate);
+    baseTime.setHours(9, 0, 0, 0); // alat aktif 09.00–09.30
+
+    for (let i = 0; i < entriesPerDay; i++) {
+      const timestamp = new Date(baseTime.getTime() + i * intervalMs);
+      const mood = moods[Math.floor(Math.random() * moods.length)];
+      data.push({
+        mood,
+        date: timestamp.toLocaleDateString("id-ID"),
+        timestamp,
+      });
+    }
+  }
+
+  // urutkan terbaru → lama
+  return data.sort((a, b) => b.timestamp - a.timestamp);
+};
+
+const dummyRiwayat = generateDummyRiwayat();
+
 export default function RekapEmosi() {
   const fadeUp = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
 
-  const datasets = {
-    "Rekap Emosi 1 Hari": [
-      { name: "Positif", value: 45, color: "#FFD84D" },
-      { name: "Netral", value: 25, color: "#8CA7FF" },
-      { name: "Negatif", value: 30, color: "#FF5A5A" },
-    ],
-    "Rekap Emosi 3 Hari": [
-      { name: "Positif", value: 50, color: "#FFD84D" },
-      { name: "Netral", value: 20, color: "#8CA7FF" },
-      { name: "Negatif", value: 30, color: "#FF5A5A" },
-    ],
-    "Rekap Emosi 7 Hari": [
-      { name: "Positif", value: 60, color: "#FFD84D" },
-      { name: "Netral", value: 15, color: "#8CA7FF" },
-      { name: "Negatif", value: 25, color: "#FF5A5A" },
-    ],
-  };
-
   const [selectedRange, setSelectedRange] = useState("Rekap Emosi 1 Hari");
   const [showDropdown, setShowDropdown] = useState(false);
-  const data = datasets[selectedRange];
+
+  // ===== Hitung persentase emosi berdasarkan range =====
+  const data = useMemo(() => {
+    const now = new Date();
+    let days = 1;
+    if (selectedRange.includes("3")) days = 3;
+    if (selectedRange.includes("7")) days = 7;
+
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - (days - 1));
+    startDate.setHours(0, 0, 0, 0);
+
+    const rangeData = dummyRiwayat.filter(
+      (s) => s.timestamp >= startDate && s.timestamp <= now
+    );
+
+    const counts = { Positif: 0, Netral: 0, Negatif: 0 };
+    rangeData.forEach((s) => counts[s.mood]++);
+
+    const total = rangeData.length || 1;
+
+    return [
+      { name: "Positif", value: Math.round((counts.Positif / total) * 100), color: "#FFD84D" },
+      { name: "Netral", value: Math.round((counts.Netral / total) * 100), color: "#8CA7FF" },
+      { name: "Negatif", value: Math.round((counts.Negatif / total) * 100), color: "#FF5A5A" },
+    ];
+  }, [selectedRange]);
 
   return (
     <div>
+      {/* Header + dropdown */}
       <div className="flex items-center gap-2 mb-3 relative">
         <h3 className="text-[#2D3570] font-semibold text-lg">{selectedRange}</h3>
         <button
@@ -47,7 +88,7 @@ export default function RekapEmosi() {
             transition={{ duration: 0.18 }}
             className="absolute top-7 left-0 bg-white border border-[#E0E5F5] shadow rounded-md z-10"
           >
-            {Object.keys(datasets).map((range) => (
+            {["Rekap Emosi 1 Hari", "Rekap Emosi 3 Hari", "Rekap Emosi 7 Hari"].map((range) => (
               <button
                 key={range}
                 onClick={() => {
@@ -67,6 +108,7 @@ export default function RekapEmosi() {
         )}
       </div>
 
+      {/* Chart */}
       <motion.div
         variants={fadeUp}
         initial="hidden"
@@ -78,6 +120,7 @@ export default function RekapEmosi() {
         <div className="relative flex justify-center items-center w-full" style={{ height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
+              {/* Lapisan background samar */}
               <Pie
                 data={data}
                 cx="50%"
@@ -90,6 +133,7 @@ export default function RekapEmosi() {
                 opacity={0.25}
                 isAnimationActive={false}
               />
+              {/* Pie utama */}
               <Pie
                 data={data}
                 cx="50%"
@@ -107,16 +151,14 @@ export default function RekapEmosi() {
           </ResponsiveContainer>
         </div>
 
+        {/* Legend */}
         <div className="flex justify-center gap-6 mt-6 text-sm flex-wrap">
-          <div className="flex items-center gap-1 text-[#2D3570]">
-            <span className="w-3 h-3 bg-[#FF5A5A] rounded-full"></span> Negatif
-          </div>
-          <div className="flex items-center gap-1 text-[#2D3570]">
-            <span className="w-3 h-3 bg-[#FFD84D] rounded-full"></span> Positif
-          </div>
-          <div className="flex items-center gap-1 text-[#2D3570]">
-            <span className="w-3 h-3 bg-[#8CA7FF] rounded-full"></span> Netral
-          </div>
+          {data.map((d, i) => (
+            <div key={i} className="flex items-center gap-1 text-[#2D3570]">
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }}></span>
+              {d.name} ({d.value}%)
+            </div>
+          ))}
         </div>
       </motion.div>
     </div>
