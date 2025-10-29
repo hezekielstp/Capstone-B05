@@ -1,8 +1,23 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { FaChevronDown } from "react-icons/fa";
+
+// ===== GLOBAL STORE untuk sinkronisasi dengan RiwayatSesi =====
+let globalSessions = [];
+
+export const setGlobalSessions = (sessions) => {
+  globalSessions = sessions;
+  // 🟢 Simpan juga ke sessionStorage agar tetap sinkron antar halaman
+  try {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("globalSessions", JSON.stringify(sessions));
+    }
+  } catch (e) {
+    console.warn("Gagal simpan sessionStorage di rekapemosi:", e);
+  }
+};
 
 // ===== DUMMY EEG REALISTIC: 7 HARI × 30 MENIT/HARI × 10 DETIK =====
 const generateDummyRiwayat = () => {
@@ -41,6 +56,28 @@ export default function RekapEmosi() {
 
   const [selectedRange, setSelectedRange] = useState("Rekap Emosi 1 Hari");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [sessionsData, setSessionsData] = useState(globalSessions.length ? globalSessions : dummyRiwayat);
+
+  // ===== Sinkronisasi real-time dengan globalSessions & sessionStorage =====
+  useEffect(() => {
+    const syncData = () => {
+      try {
+        const stored = typeof window !== "undefined" ? sessionStorage.getItem("globalSessions") : null;
+        const parsed = stored ? JSON.parse(stored) : [];
+        if (parsed.length && parsed.length !== sessionsData.length) {
+          setSessionsData(parsed);
+        } else if (globalSessions.length && globalSessions.length !== sessionsData.length) {
+          setSessionsData(globalSessions);
+        }
+      } catch (e) {
+        console.warn("Sync rekapemosi error:", e);
+      }
+    };
+
+    syncData(); // sync langsung di awal
+    const interval = setInterval(syncData, 2000);
+    return () => clearInterval(interval);
+  }, [sessionsData]);
 
   // ===== Hitung persentase emosi berdasarkan range =====
   const data = useMemo(() => {
@@ -53,8 +90,8 @@ export default function RekapEmosi() {
     startDate.setDate(now.getDate() - (days - 1));
     startDate.setHours(0, 0, 0, 0);
 
-    const rangeData = dummyRiwayat.filter(
-      (s) => s.timestamp >= startDate && s.timestamp <= now
+    const rangeData = sessionsData.filter(
+      (s) => new Date(s.timestamp) >= startDate && new Date(s.timestamp) <= now
     );
 
     const counts = { Positif: 0, Netral: 0, Negatif: 0 };
@@ -67,7 +104,7 @@ export default function RekapEmosi() {
       { name: "Netral", value: Math.round((counts.Netral / total) * 100), color: "#8CA7FF" },
       { name: "Negatif", value: Math.round((counts.Negatif / total) * 100), color: "#FF5A5A" },
     ];
-  }, [selectedRange]);
+  }, [selectedRange, sessionsData]);
 
   return (
     <div>
