@@ -105,20 +105,50 @@ export default function DashboardPage() {
 
   // ============================================================
   // 🔹 3. Fetch emosi dari EEG server (real-time)
+  //      ❗ PERBAIKAN: gunakan base URL dari env (5001), tambah token opsional,
+  //      dan tangani abort/response non-OK.
   // ============================================================
   useEffect(() => {
-    const fetchEEGData = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/eeg-latest");
-        const data = await response.json();
-        setEmotion(data.emotion || "Netral");
-      } catch (error) {
-        console.error("Gagal ambil data EEG:", error);
-      }
-    };
-
-    fetchEEGData();
-    const interval = setInterval(fetchEEGData, 10000);
+    const API_BASE =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  
+      const updateEmotionFromSession = async () => {
+        try {
+          const token = localStorage.getItem("token");
+      
+          const res = await fetch(`${API_BASE}/api/sessions`, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          });
+      
+          if (!res.ok) {
+            console.error("Fetch sessions gagal:", res.status);
+            return;
+          }
+      
+          const json = await res.json();
+      
+          const sessions = json?.data || json?.sessions || [];
+      
+          if (sessions.length > 0) {
+            const latest = [...sessions].sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            )[0];
+      
+            if (latest?.mood) {
+              setEmotion(latest.mood);
+            }
+          }
+        } catch (err) {
+          console.error("Gagal ambil session:", err);
+        }
+      };
+  
+    updateEmotionFromSession(); // initial
+    const interval = setInterval(updateEmotionFromSession, 10000);
+  
     return () => clearInterval(interval);
   }, []);
 
@@ -202,7 +232,6 @@ export default function DashboardPage() {
           {/* Rekap + Riwayat */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <RekapEmosi />
-            
             {/* 🔹 REVISI: kirim data dari EmosiTerakhir ke RiwayatSesi */}
             <RiwayatSesi
               latestEmotion={emotion}

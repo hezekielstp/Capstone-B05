@@ -11,7 +11,7 @@ const eegSessionSchema = new mongoose.Schema(
     mood: {
       type: String,
       enum: ["Positif", "Netral", "Negatif"],
-      required: true,
+      required: true, 
     },
     note: {
       type: String,

@@ -4,6 +4,8 @@ import { connectDB } from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import noteRoutes from "./routes/notesRoutes.js";
 import eegSessionRoutes from "./routes/eegSessionRoutes.js";
+import cameraCaptureRoutes from "./routes/cameraCaptureRoutes.js";
+import validateCaptureRoutes from "./routes/validateCaptureRoutes.js";
 import cors from "cors";
 
 // Inisialisasi konfigurasi environment (.env)
@@ -15,6 +17,10 @@ app.use(cors());
 
 // Middleware untuk membaca JSON dari request body
 app.use(express.json());
+
+app.use("/api/captures", cameraCaptureRoutes);
+app.use("/api/captures/validate", validateCaptureRoutes);
+
 
 // Tes koneksi database
 connectDB();

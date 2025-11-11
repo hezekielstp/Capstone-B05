@@ -7,12 +7,45 @@ export default function RekamFoto({ latestEmotion, onPhotoUpdate }) {
   const fadeUp = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
   const [photo, setPhoto] = useState("/flowers.png");
 
-  // simulasi update real-time tiap 10 detik
+  // real-time update tiap 10 detik
   useEffect(() => {
-    const updatePhoto = () => {
-      // nanti diganti real EEG capture
-      setPhoto("/flowers.png");
-      if (onPhotoUpdate) onPhotoUpdate("/flowers.png");
+    const updatePhoto = async () => {
+      try {
+        // ✅ Ambil data dari backend
+        const res = await fetch(
+          process.env.NEXT_PUBLIC_API_URL + "/api/captures"
+        );
+        const json = await res.json();
+
+        // Jika tidak ada data → fallback
+        if (!json?.data || json.data.length === 0) {
+          setPhoto("/flowers.png");
+          if (onPhotoUpdate) onPhotoUpdate("/flowers.png");
+          return;
+        }
+
+        // ✅ Sort berdasarkan createdAt DESC → terbaru pertama
+        const sorted = [...json.data].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        const latest = sorted[0];
+
+        if (latest?.imageUrl) {
+          setPhoto(latest.imageUrl);
+          if (onPhotoUpdate) onPhotoUpdate(latest.imageUrl);
+        } else {
+          // fallback
+          setPhoto("/flowers.png");
+          if (onPhotoUpdate) onPhotoUpdate("/flowers.png");
+        }
+      } catch (err) {
+        console.error("Gagal fetch foto:", err);
+
+        // fallback
+        setPhoto("/flowers.png");
+        if (onPhotoUpdate) onPhotoUpdate("/flowers.png");
+      }
     };
 
     updatePhoto(); // initial render
