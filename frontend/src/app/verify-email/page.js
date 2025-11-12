@@ -28,7 +28,7 @@ export default function VerifyEmailPage() {
         setMessage("Email Anda berhasil diverifikasi!");
 
         // ✅ Redirect otomatis ke dashboard
-        setTimeout(() => router.push("/dashboard"), 3000);
+        setTimeout(() => router.push("/login"), 3000);
       } catch (err) {
         setStatus("error");
         setMessage(
@@ -87,7 +87,7 @@ export default function VerifyEmailPage() {
             </h2>
             <p className="text-gray-700 text-base">{message}</p>
             <p className="text-sm text-gray-500 mt-3">
-              Mengalihkan ke dashboard...
+              Mengalihkan ke login...
             </p>
           </motion.div>
         )}
