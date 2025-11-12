@@ -72,47 +72,121 @@ export default function RiwayatSesi({
     }
   };
 
+  // ✅ ✅ ✅ NEW LOGIC (with Authorization token FIXED)
   useEffect(() => {
-    if (!latestDate || !latestTime || !latestEmotion) return;
+    const fetchSessions = async () => {
+      console.log("🔥 fetchSessions start");
+      try {
+        const API_BASE =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-    const base = parseLatestDateTime();
-    const all = [];
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("token")
+            : null;
 
-    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-      for (let i = 0; i < entriesPerDay; i++) {
-        const ts = new Date(base.getTime() - (dayOffset * 86400000 + i * intervalMs));
-        const isLatest = dayOffset === 0 && i === 0;
-        const mood = isLatest ? latestEmotion : moods[Math.floor(Math.random() * moods.length)];
-        const photo = isLatest ? (latestPhoto || "/flowers.png") : emojiPaths[mood];
-
-        all.push({
-          mood,
-          note: "",
-          tempNote: "",
-          showInput: false,
-          photo,
-          timestamp: ts,
-          isoDate: ts.toISOString().slice(0, 10),
-          time: ts.toLocaleTimeString("id-ID", { hour12: false }),
-          date: ts.toLocaleDateString("id-ID"),
+        //
+        // ✅ 1) GET ALL EEG SESSIONS
+        //
+        const sessionRes = await fetch(`${API_BASE}/api/sessions`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
         });
-      }
-    }
 
-    all.sort((a, b) => b.timestamp - a.timestamp);
-    setSessions(all);
-    setGlobalSessions(all);
+        const sessionJson = await sessionRes.json();
 
-    // ====== NEW: simpan juga ke sessionStorage supaya page detail bisa baca dan sinkron ======
-    try {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("globalSessions", JSON.stringify(all));
+        console.log("sessionRes.ok:", sessionRes.ok);
+        console.log("sessionJson:", sessionJson);
+        console.log("🔥 RESULT /sessions:", sessionJson);
+
+        const sessionsArray = Array.isArray(sessionJson)
+        ? sessionJson
+        : sessionJson.data;
+      
+      if (!sessionRes.ok || !sessionsArray || sessionsArray.length === 0) {
+        setSessions([]);
+        setGlobalSessions([]);
+        return;
+      }      
+
+        const sortedSessions = [...sessionsArray].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        const mapped = [];
+
+        //
+        // ✅ 2) GET CAPTURES PER SESSION
+        //
+        for (const s of sortedSessions) {
+          const capRes = await fetch(
+            `${API_BASE}/api/captures/session/${s._id}`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: token ? `Bearer ${token}` : "",
+              },
+            }
+          );
+
+          const capJson = await capRes.json();
+          console.log(`📷 RESULT /captures/session/${s._id}:`, capJson);
+
+          let photo = "/flowers.png";
+
+          if (capJson?.data && capJson.data.length > 0) {
+            let sortedCap = [...capJson.data].sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+
+            if (sortedCap[0]?.imageUrl) {
+              photo = sortedCap[0].imageUrl;
+            }
+          }
+
+          const ts = new Date(s.createdAt);
+
+          mapped.push({
+            mood: s.mood || "Netral",
+            note: s.note || "",
+            tempNote: "",
+            showInput: false,
+            photo,
+            timestamp: ts,
+            isoDate: ts.toISOString().slice(0, 10),
+            time: ts.toLocaleTimeString("id-ID", { hour12: false }),
+            date: ts.toLocaleDateString("id-ID"),
+          });
+        }
+
+        mapped.sort((a, b) => b.timestamp - a.timestamp);
+        console.log("✅ MAPPED DATA →", mapped);
+
+        setSessions(mapped);
+        setGlobalSessions(mapped);
+
+        try {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("globalSessions", JSON.stringify(mapped));
+          }
+        } catch {}
+
+      } catch (err) {
+        console.error("Gagal load sessions/captures:", err);
       }
-    } catch (e) {
-      // jangan ganggu tampilan kalau sessionStorage error
-      console.warn("Gagal set sessionStorage globalSessions:", e);
-    }
-  }, [latestEmotion, latestTime, latestDate, latestPhoto]);
+    };
+
+    fetchSessions();
+
+    
+    const interval = setInterval(fetchSessions, 10000);   // ✅ auto-refresh 10s
+
+    return () => clearInterval(interval);  // cleanup
+  }, []);
+
+
 
   const handleToggleInput = (idx) => {
     const updated = [...sessions];
