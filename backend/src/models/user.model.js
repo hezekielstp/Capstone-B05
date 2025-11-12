@@ -29,6 +29,13 @@ const userSchema = new mongoose.Schema(
     gender: { 
       type: String, 
       enum: ["Male", "Female", "Other"] 
+    },  
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
     },
   },
   { timestamps: true }

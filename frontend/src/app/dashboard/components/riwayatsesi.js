@@ -14,65 +14,10 @@ export default function RiwayatSesi({
   const router = useRouter();
   const fadeUp = { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } };
 
-  const moods = ["Positif", "Netral", "Negatif"];
-  const emojiPaths = {
-    Positif: "/rekaman/positif.png",
-    Netral: "/rekaman/netral.png",
-    Negatif: "/rekaman/negatif.png",
-  };
-  const emojiImages = {
-    Positif: "/positif.png",
-    Negatif: "/negatif.png",
-    Netral: "/netral.png",
-  };
-
-  const intervalMs = 10000;
-  const durationPerDay = 30 * 60 * 1000;
-  const entriesPerDay = durationPerDay / intervalMs;
-
   const [sessions, setSessions] = useState([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(null);
 
-  const monthMapId = {
-    januari: 0, februari: 1, maret: 2, april: 3, mei: 4, juni: 5,
-    juli: 6, agustus: 7, september: 8, oktober: 9, november: 10, desember: 11,
-  };
-
-  const parseLatestDateTime = () => {
-    try {
-      if (!latestDate) return new Date();
-      let cleanTime = (latestTime || "00:00:00").replace(/\./g, ":");
-      const parts = cleanTime.split(":").map((t) => parseInt(t || "0", 10));
-      const [hh, mm, ss] = [parts[0] || 0, parts[1] || 0, parts[2] || 0];
-
-      const slash = latestDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if (slash) {
-        const [_, d, m, y] = slash;
-        return new Date(parseInt(y), parseInt(m) - 1, parseInt(d), hh, mm, ss);
-      }
-
-      const words = latestDate.trim().split(/\s+/);
-      if (words.length >= 3) {
-        const day = parseInt(words[0], 10);
-        const monthWord = words[1].toLowerCase();
-        const year = parseInt(words[2], 10);
-        const monthKey = Object.keys(monthMapId).find((k) =>
-          k.startsWith(monthWord)
-        );
-        if (monthKey && !isNaN(day) && !isNaN(year)) {
-          return new Date(year, monthMapId[monthKey], day, hh, mm, ss);
-        }
-      }
-
-      const parsed = new Date(`${latestDate} ${cleanTime}`);
-      if (!isNaN(parsed)) return parsed;
-      return new Date();
-    } catch {
-      return new Date();
-    }
-  };
-
-  // ✅ ✅ ✅ NEW LOGIC (with Authorization token FIXED)
+  // ✅ FETCH SESSION + CAPTURE
   useEffect(() => {
     const fetchSessions = async () => {
       console.log("🔥 fetchSessions start");
@@ -85,9 +30,7 @@ export default function RiwayatSesi({
             ? localStorage.getItem("token")
             : null;
 
-        //
-        // ✅ 1) GET ALL EEG SESSIONS
-        //
+        // ✅ GET SESSIONS
         const sessionRes = await fetch(`${API_BASE}/api/sessions`, {
           headers: {
             "Content-Type": "application/json",
@@ -96,30 +39,23 @@ export default function RiwayatSesi({
         });
 
         const sessionJson = await sessionRes.json();
-
-        console.log("sessionRes.ok:", sessionRes.ok);
-        console.log("sessionJson:", sessionJson);
-        console.log("🔥 RESULT /sessions:", sessionJson);
-
         const sessionsArray = Array.isArray(sessionJson)
-        ? sessionJson
-        : sessionJson.data;
-      
-      if (!sessionRes.ok || !sessionsArray || sessionsArray.length === 0) {
-        setSessions([]);
-        setGlobalSessions([]);
-        return;
-      }      
+          ? sessionJson
+          : sessionJson.data;
+
+        if (!sessionRes.ok || !sessionsArray || sessionsArray.length === 0) {
+          setSessions([]);
+          setGlobalSessions([]);
+          return;
+        }
 
         const sortedSessions = [...sessionsArray].sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
 
-        const mapped = [];
+        let mapped = [];
 
-        //
-        // ✅ 2) GET CAPTURES PER SESSION
-        //
+        // ✅ FETCH CAPTURE PER SESSION
         for (const s of sortedSessions) {
           const capRes = await fetch(
             `${API_BASE}/api/captures/session/${s._id}`,
@@ -132,7 +68,6 @@ export default function RiwayatSesi({
           );
 
           const capJson = await capRes.json();
-          console.log(`📷 RESULT /captures/session/${s._id}:`, capJson);
 
           let photo = "/flowers.png";
 
@@ -149,6 +84,7 @@ export default function RiwayatSesi({
           const ts = new Date(s.createdAt);
 
           mapped.push({
+            _id: s._id,        // ✅ Tambahkan ID session
             mood: s.mood || "Netral",
             note: s.note || "",
             tempNote: "",
@@ -171,8 +107,7 @@ export default function RiwayatSesi({
           if (typeof window !== "undefined") {
             sessionStorage.setItem("globalSessions", JSON.stringify(mapped));
           }
-        } catch {}
-
+        } catch { }
       } catch (err) {
         console.error("Gagal load sessions/captures:", err);
       }
@@ -180,59 +115,87 @@ export default function RiwayatSesi({
 
     fetchSessions();
 
-    
-    const interval = setInterval(fetchSessions, 10000);   // ✅ auto-refresh 10s
-
-    return () => clearInterval(interval);  // cleanup
+    const interval = setInterval(fetchSessions, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-
-
+  // ✅ buka/tutup input note
   const handleToggleInput = (idx) => {
     const updated = [...sessions];
     updated[idx].showInput = !updated[idx].showInput;
     updated[idx].tempNote = updated[idx].note;
     setSessions(updated);
   };
+
+  // ✅ typing note
   const handleTempNoteChange = (idx, val) => {
     const updated = [...sessions];
     updated[idx].tempNote = val;
     setSessions(updated);
   };
-  const handleSaveNote = (idx) => {
-    const updated = [...sessions];
-    updated[idx].note = updated[idx].tempNote;
-    updated[idx].showInput = false;
-    setSessions(updated);
-    setGlobalSessions(updated);
+
+  // ✅ PATCH NOTE → BACKEND
+  const handleSaveNote = async (idx) => {
     try {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("globalSessions", JSON.stringify(updated));
+      const API_BASE =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token")
+          : null;
+
+      const updated = [...sessions];
+      const sessionId = updated[idx]._id;   // ✅ ambil ID yg akan diupdate
+      const noteToSave = updated[idx].tempNote;
+
+      // update UI langsung
+      updated[idx].note = noteToSave;
+      updated[idx].showInput = false;
+      setSessions(updated);
+
+      // ✅ simpan ke DB (PATCH)
+      const patchRes = await fetch(`${API_BASE}/api/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({ note: noteToSave }),
+      });
+
+      if (!patchRes.ok) {
+        console.error("⚠️ Gagal update NOTE:", patchRes.status);
+      } else {
+        console.log("✅ NOTE updated successfully");
       }
-    } catch {}
-  };
-  const handleDeleteNote = (idx) => {
-    const updated = [...sessions];
-    updated[idx].note = "";
-    updated[idx].tempNote = "";
-    updated[idx].showInput = false;
-    setSessions(updated);
-    setGlobalSessions(updated);
-    try {
-      if (typeof window !== "undefined") {
+
+      setGlobalSessions(updated);
+      try {
         sessionStorage.setItem("globalSessions", JSON.stringify(updated));
-      }
-    } catch {}
+      } catch { }
+    } catch (err) {
+      console.error("⚠️ Error PATCH NOTE:", err);
+    }
   };
+
+  // ✅ delete note (kosongkan)
+  const handleDeleteNote = async (idx) => {
+    await handleSaveNote(idx, "");
+  };
+
   const handleShowPhoto = (idx) => setCurrentPhotoIndex(idx);
   const handleClosePhoto = () => setCurrentPhotoIndex(null);
 
+  // GROUP BY DATE
   const grouped = sessions.reduce((acc, item, idx) => {
     if (!acc[item.isoDate]) acc[item.isoDate] = { items: [], firstIndex: idx };
     acc[item.isoDate].items.push({ ...item, globalIndex: idx });
     return acc;
   }, {});
-  const sortedDateKeys = Object.keys(grouped).sort((a, b) => (a < b ? 1 : -1));
+  const sortedDateKeys = Object.keys(grouped).sort((a, b) =>
+    a < b ? 1 : -1
+  );
 
   const formatHeaderDate = (iso) => {
     try {
@@ -283,7 +246,10 @@ export default function RiwayatSesi({
               </div>
 
               {grouped[iso].items.map((s) => (
-                <div key={s.globalIndex} className="bg-[#F5F7FB] rounded-xl p-3 mb-3 flex flex-col">
+                <div
+                  key={s.globalIndex}
+                  className="bg-[#F5F7FB] rounded-xl p-3 mb-3 flex flex-col"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <img
@@ -292,7 +258,9 @@ export default function RiwayatSesi({
                         className="w-10 h-10 object-contain"
                       />
                       <div>
-                        <p className="font-semibold text-[#2D3570]">{s.mood}</p>
+                        <p className="font-semibold text-[#2D3570]">
+                          {s.mood}
+                        </p>
                         <p className="text-xs text-gray-500">
                           {s.time} • {s.date}
                         </p>

@@ -40,24 +40,17 @@ export default function RegisterRightSection() {
         throw new Error(data.message || "Pendaftaran gagal");
       }
 
-      // ✅ HAPUS data user lama sepenuhnya
+      // ✅ Bersihkan data user lama
       localStorage.removeItem("authToken");
       localStorage.removeItem("userId");
       localStorage.removeItem("userName");
 
-      // ✅ SIMPAN USER BARU + TOKEN LOGIN
-      if (data.token) {
-        localStorage.setItem("authToken", data.token);
-      }
-      if (data.user?.id) {
-        localStorage.setItem("userId", data.user.id);
-      }
-      if (data.user?.name) {
-        localStorage.setItem("userName", data.user.name);
-      }
+      // ✅ Tampilkan info verifikasi
+      alert("✅ Registrasi berhasil!\nSilakan cek email Anda dan lakukan verifikasi.");
 
-      // ✅ Redirect setelah register
-      router.push("/dashboard");
+      // ✅ Redirect ke login
+      router.push("/login");
+      
     } catch (err) {
       console.error("❌ Register error:", err);
       setError(err.message);

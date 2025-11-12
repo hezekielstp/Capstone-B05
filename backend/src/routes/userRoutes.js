@@ -4,6 +4,7 @@ import {
   loginUser,
   getCurrentUser,
   forgotPassword, // ✅ tambahan baru
+  verifyEmail
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -12,6 +13,7 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.get("/me", getCurrentUser);
+router.get("/verify", verifyEmail);
 
 // 🔹 Route Forgot Password (baru)
 router.post("/forgot-password", forgotPassword);
