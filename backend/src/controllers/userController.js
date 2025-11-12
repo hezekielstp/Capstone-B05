@@ -8,7 +8,7 @@ import nodemailer from "nodemailer";
    🔹 SEND VERIFICATION EMAIL
 ================================ */
 async function sendVerificationEmail(email, token) {
-  const verifyURL = `http://localhost:5001/api/users/verify?token=${token}`;
+  const verifyURL = `http://localhost:3000/verify-email?token=${token}`;
 
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -296,7 +296,7 @@ export async function forgotPassword(req, res) {
       { expiresIn: "15m" }
     );
 
-    const resetLink = `http://localhost:5001/api/users/verify-reset?token=${resetToken}`;
+    const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",

@@ -16,11 +16,13 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/users/verify-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        });
+        // ✅ Sesuaikan dengan backend: GET + query param
+        const res = await fetch(
+          `http://localhost:5001/api/users/verify?token=${token}`,
+          {
+            method: "GET",
+          }
+        );
 
         const data = await res.json();
 
@@ -29,7 +31,7 @@ export default function VerifyEmailPage() {
         setStatus("success");
         setMessage("✅ Email Anda berhasil diverifikasi!");
 
-        // Redirect otomatis ke dashboard setelah beberapa detik
+        // Redirect otomatis
         setTimeout(() => router.push("/dashboard"), 2500);
       } catch (err) {
         setStatus("error");
@@ -51,10 +53,10 @@ export default function VerifyEmailPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
-      {/* 🔹 Kiri: Reuse tampilan Affectra */}
+      {/* 🔹 Kiri */}
       <RegisterLeftSection />
 
-      {/* 🔹 Kanan: Status Verifikasi */}
+      {/* 🔹 Kanan */}
       <motion.div
         className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center px-6 md:px-16 py-10 text-center"
         initial={{ x: 100, opacity: 0 }}

@@ -33,7 +33,10 @@ export default function ResetPasswordPage() {
       const res = await fetch("http://localhost:5001/api/users/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({
+          token,
+          newPassword: password,   // ✅ kirim newPassword sesuai backend
+        }),
       });
 
       const data = await res.json();
@@ -59,10 +62,10 @@ export default function ResetPasswordPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
-      {/* 🔹 Bagian Kiri (logo, background biru, animasi) */}
+      {/* 🔹 Bagian Kiri */}
       <LoginLeftSection />
 
-      {/* 🔹 Bagian Kanan (form reset password) */}
+      {/* 🔹 Bagian Kanan */}
       <motion.div
         className="w-full md:w-1/2 bg-white flex flex-col justify-center px-6 md:px-16 py-10"
         initial={{ x: 100, opacity: 0 }}
