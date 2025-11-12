@@ -4,7 +4,9 @@ import {
   loginUser,
   getCurrentUser,
   forgotPassword, // ✅ tambahan baru
-  verifyEmail
+  verifyEmail,
+  resetPassword,
+  verifyResetToken
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -14,6 +16,9 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.get("/me", getCurrentUser);
 router.get("/verify", verifyEmail);
+router.post("/reset-password", resetPassword);
+router.get("/verify-reset", verifyResetToken);
+
 
 // 🔹 Route Forgot Password (baru)
 router.post("/forgot-password", forgotPassword);
