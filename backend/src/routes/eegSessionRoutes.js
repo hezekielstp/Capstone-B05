@@ -1,6 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { getSessions, createSession, updateSessionNote } from "../controllers/eegSessionController.js";
+import { generateDummySessions } from "../controllers/eegSessionController.js";
 
 const router = express.Router();
 
@@ -12,5 +13,7 @@ router.post("/", verifyToken, createSession);
 
 // PATCH update catatan
 router.patch("/:id", verifyToken, updateSessionNote);
+
+router.post("/generate-dummy", verifyToken, generateDummySessions);
 
 export default router;
