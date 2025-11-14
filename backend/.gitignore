@@ -26,3 +26,5 @@ logs/
 
 dump/
 data/
+
+inference/__pycache__/
