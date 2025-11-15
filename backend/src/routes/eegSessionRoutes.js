@@ -1,7 +1,11 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
-import { getSessions, createSession, updateSessionNote } from "../controllers/eegSessionController.js";
-import { generateDummySessions } from "../controllers/eegSessionController.js";
+import { 
+  getSessions, 
+  createSession, 
+  updateSessionNote,
+  runRealtimeInference     // ⬅️ Tambahkan ini
+} from "../controllers/eegSessionController.js";
 
 const router = express.Router();
 
@@ -14,6 +18,8 @@ router.post("/", verifyToken, createSession);
 // PATCH update catatan
 router.patch("/:id", verifyToken, updateSessionNote);
 
-router.post("/generate-dummy", verifyToken, generateDummySessions);
+
+// 🧠 Jalankan inference Python → simpan ke MongoDB
+router.post("/inference", verifyToken, runRealtimeInference);  // ⬅️ Route baru
 
 export default router;

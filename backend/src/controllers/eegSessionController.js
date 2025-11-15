@@ -60,118 +60,64 @@ export async function updateSessionNote(req, res) {
   }
 }
 
-/* ===============================================================
-   🧩 KODE LAMA — Jalankan Python langsung ke MongoDB (❌ Sekarang dikomentari)
-=================================================================
-// 🧩 Fitur baru — Generate 5 data dummy EEGSession lewat Python
-export async function generateDummySessions(req, res) {
+// ===============================================================
+// 🧠 FITUR BARU — Jalankan inference EEG (Python) & simpan ke MongoDB
+// ===============================================================
+export async function runRealtimeInference(req, res) {
   try {
-    const userId = req.userId; // ✅ didapat dari middleware verifyToken
+    const userId = req.userId;
 
     if (!userId) {
       return res.status(400).json({ message: "User ID tidak ditemukan." });
     }
 
-    console.log(`🚀 Menjalankan generator dummy untuk userId: ${userId}`);
-
-    // Jalankan Python script di folder backend/
-    const process = spawn("python", ["generate_dummy_session.py", userId]);
-
-    // Output dari Python script (stdout)
-    process.stdout.on("data", (data) => {
-      console.log(`[PYTHON LOG]: ${data}`);
-    });
-
-    // Jika terjadi error di Python
-    process.stderr.on("data", (data) => {
-      console.error(`[PYTHON ERROR]: ${data}`);
-    });
-
-    // Ketika script selesai
-    process.on("close", (code) => {
-      console.log(`✅ Python process exited with code ${code}`);
-    });
-
-    // Balas ke client agar tidak menunggu Python selesai
-    return res.status(200).json({
-      message: "🚀 Proses generate dummy data dimulai.",
-      userId,
-    });
-  } catch (err) {
-    console.error("❌ Gagal menjalankan generator dummy:", err);
-    return res.status(500).json({
-      message: "Gagal menjalankan generator dummy.",
-      error: err.message,
-    });
-  }
-}
-================================================================= */
-
-/* ===============================================================
-   🧩 KODE BARU — Python hanya generate mood, Node.js simpan ke DB
-================================================================= */
-export async function generateDummySessions(req, res) {
-  try {
-    const userId = req.userId; // ✅ dari middleware verifyToken
-
-    if (!userId) {
-      return res.status(400).json({ message: "User ID tidak ditemukan." });
-    }
-
-    console.log(`🚀 Generate dummy untuk userId: ${userId}`);
-
-    // Jalankan Python script (tanpa kirim userId)
-    const process = spawn("python", ["generate_dummy.py"]);
+    // Jalankan script Python inference
+    const py = spawn("python", ["inference/inference.py"]);
 
     let output = "";
 
-    // Ambil hasil output Python
-    process.stdout.on("data", (data) => {
+    py.stdout.on("data", (data) => {
       output += data.toString();
     });
 
-    // Tangani error dari Python
-    process.stderr.on("data", (data) => {
+    py.stderr.on("data", (data) => {
       console.error("[PYTHON ERROR]:", data.toString());
     });
 
-    // Ketika proses selesai
-    process.on("close", async (code) => {
+    py.on("close", async (code) => {
       if (code !== 0) {
-        console.error("❌ Python exited with code", code);
-        return res.status(500).json({ message: "Python script error." });
+        return res.status(500).json({
+          message: "Python inference error",
+        });
       }
 
       try {
-        // Parsing hasil JSON dari Python
-        const dummySessions = JSON.parse(output);
+        // Ambil hasil JSON dari Python
+        const result = JSON.parse(output);
 
-        // 🧠 Masukkan ke MongoDB via Mongoose
-        const inserted = await EEGSession.insertMany(
-          dummySessions.map((d) => ({
-            userId,
-            mood: d.mood,
-            photoPath: d.photoPath,
-          }))
-        );
+        // Simpan session baru ke DB
+        const saved = await EEGSession.create({
+          userId,
+          mood: result.prediction,     // Negatif / Netral / Positif
+          probabilities: result.probabilities,
+          photoPath: null,
+          note: "",
+        });
 
-        console.log(`✅ ${inserted.length} dummy session berhasil ditambahkan.`);
         return res.status(201).json({
-          message: "Dummy session berhasil dibuat.",
-          data: inserted,
+          message: "Inference berhasil",
+          data: saved,
         });
       } catch (err) {
-        console.error("⚠️ Gagal parsing/insert hasil Python:", err);
         return res.status(500).json({
-          message: "Gagal menyimpan hasil dari Python.",
+          message: "Gagal parsing hasil Python",
           error: err.message,
         });
       }
     });
   } catch (err) {
-    console.error("❌ Gagal menjalankan generator dummy:", err);
     return res.status(500).json({
-      message: "Gagal menjalankan generator dummy.",
+      message: "Gagal menjalankan inference",
       error: err.message,
     });
   }

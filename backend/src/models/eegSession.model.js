@@ -8,18 +8,27 @@ const eegSessionSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
     mood: {
       type: String,
       enum: ["Positif", "Netral", "Negatif"],
-      required: true, 
+      required: true,
     },
+
+    probabilities: {
+      type: [Number],   // ← hasil prediction probability
+      default: [],      // ← aman, tidak wajib
+    },
+
     note: {
       type: String,
       default: "",
     },
+
     photoPath: {
-      type: String, // contoh: "/rekaman/gambarSesi12.png"
-      required: true,
+      type: String,
+      required: false,  // ← dibuat FALSE agar inference tanpa foto tetap bisa
+      default: null,
     },
   },
   { timestamps: true }
