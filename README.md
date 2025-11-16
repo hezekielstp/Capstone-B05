@@ -41,5 +41,5 @@ Affectra diharapkan menjadi alternatif self-monitoring yang **objektif, aman, ef
 ## Tim Pengembang
 - **Shafa Aura Yogadiasa** – Frontend & Desain UI/UX
 - **Hezekiel Sitepu** – Backend & Database
-- **Jhon Samuel K.** – Analisis Data EEG
+- **Jhon Samuel Kudadiri** – Analisis Data EEG
 
