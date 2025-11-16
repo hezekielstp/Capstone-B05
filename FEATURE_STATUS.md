@@ -13,9 +13,9 @@ Dokumen ini menjelaskan status implementasi semua fitur dalam aplikasi **Affectr
 | Autentikasi & User | 6 | 6 | 0 | 0 |
 | Sesi EEG | 4 | 3 | 1 | 0 |
 | Catatan (Notes) | 3 | 3 | 0 | 0 |
-| Kamera & Pemicu Emosi | 6 | 5 | 1 | 0 |
+| Kamera & Pemicu Emosi | 6 | 6 | 0 | 0 |
 | Frontend Dashboard | 6 | 6 | 0 | 0 |
-| **TOTAL** | **25** | **23** | **2** | **0** |
+| **TOTAL** | **25** | **24** | **1** | **0** |
 
 ---
 
@@ -237,21 +237,17 @@ Dokumen ini menjelaskan status implementasi semua fitur dalam aplikasi **Affectr
   - Return deleted record
 - **File:** `backend/src/controllers/cameraCaptureController.js`
 
-### 🟡 Fitur yang Sebagian Berfungsi
-
 #### 4.6 Camera Capture Validation
-- **Status:** 🟡 Sebagian Berfungsi
+- **Status:** ✅ Berfungsi Penuh
 - **Endpoint:** `POST /api/captures/validate`
-- **Implementasi yang Ada:**
-  - Route sudah disiapkan
-  - Controller sudah ada (`validateCaptureController.js`)
+- **Implementasi:**
+  - Validasi metadata sebelum upload foto
+  - Cek sessionId valid (session exist di database)
+  - Cek duplicate timestamp
+  - Return valid true/false dengan reason
 - **File:** 
   - `backend/src/routes/validateCaptureRoutes.js`
   - `backend/src/controllers/validateCaptureController.js`
-- **Yang Belum Lengkap:**
-  - ⚠️ Logic validasi belum diimplementasikan secara lengkap
-  - ❌ Kriteria validasi foto belum jelas (quality check, content verification, etc.)
-- **Catatan:** Infrastructure sudah siap, tinggal implementasi business logic
 
 ---
 
@@ -446,14 +442,13 @@ Dokumen ini menjelaskan status implementasi semua fitur dalam aplikasi **Affectr
 7. **Email Notifications** - Professional email templates untuk verifikasi dan reset password
 
 ### 🟡 Area yang Perlu Pengembangan
-1. **Hardware Integration** - Integrasi dengan ESP32 dan sensor EEG fisik untuk data real-time
-2. **Bluetooth Communication** - Implementasi komunikasi Bluetooth antara device dan backend
-3. **Camera Validation Logic** - Implementasi lengkap logic validasi foto
-4. **Real EEG Data Pipeline** - Transisi dari simulasi ke data real dari sensor FP1
+1. **Hardware Integration** - Integrasi dengan ESP32 dan sensor EEG fisik untuk data real-time (sedang dalam tahap implementasi untuk fitur inference)
+2. **Bluetooth Communication** - Implementasi komunikasi Bluetooth antara device dan backend untuk streaming data EEG
+3. **Real EEG Data Pipeline** - Transisi dari simulasi ke data real dari sensor FP1
 
 ### 🎯 Rekomendasi Prioritas
-1. **HIGH Priority:** Integrasi hardware EEG device dengan backend
-2. **MEDIUM Priority:** Implementasi camera validation logic
+1. **HIGH Priority:** Integrasi hardware EEG device dengan backend untuk data real-time
+2. **MEDIUM Priority:** Implementasi komunikasi Bluetooth ESP32 untuk streaming data
 3. **LOW Priority:** Optimisasi UI/UX berdasarkan user testing
 
 ---
