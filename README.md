@@ -32,7 +32,7 @@ Kami menggunakan **MERN Stack (MongoDB, Express.js, React.js, Node.js)** karena 
 - Mendukung operasi CRUD dengan performa tinggi untuk data sensor yang kontinu
 
 ## Algoritma Klasifikasi
-- Sistem menggunakan **SVM, XGBoost, dan Random Forest** untuk mengidentifikasi emosi pengguna
+- Sistem menggunakan **XGBoost** untuk mengidentifikasi emosi pengguna
 - Channel utama EEG: **FP1**
 - Data EEG dikirim via **Bluetooth**, diproses secara real-time, dan disimpan untuk pemantauan jangka panjang
 
@@ -40,7 +40,7 @@ Kami menggunakan **MERN Stack (MongoDB, Express.js, React.js, Node.js)** karena 
 Affectra diharapkan menjadi alternatif self-monitoring yang **objektif, aman, efisien, dan berkelanjutan**, membantu pengguna memahami emosinya sebelum berkonsultasi dengan psikolog. Perangkat ini mendukung pengenalan dan regulasi emosi secara real-time, sekaligus menyediakan data historis untuk analisis lebih lanjut.
 
 ## Tim Pengembang
-- **Shafa Aura Yogadiasa** – Frontend & Integrasi UI/UX
+- **Shafa Aura Yogadiasa** – Frontend & Desain UI/UX
 - **Hezekiel Sitepu** – Backend & Database
 - **Jhon Samuel K.** – Analisis Data EEG
 
