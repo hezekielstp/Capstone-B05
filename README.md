@@ -25,7 +25,6 @@ Kami menggunakan **MERN Stack (MongoDB, Express.js, React.js, Node.js)** karena 
 ### Backend
 - **Node.js + Express.js** menyediakan kerangka kerja efisien untuk REST API dan WebSocket
 - Mendukung integrasi skrip Python untuk pemrosesan machine learning
-- Memproses data EEG secara real-time melalui message broker **Apache Kafka**
 
 ### Database
 - **MongoDB** sebagai basis data NoSQL untuk menangani data tidak terstruktur dan kompleks dari EEG
