@@ -1,4 +1,6 @@
 import mongoose from "mongoose"
+import dotenv from "dotenv";
+dotenv.config();
 
 export const connectDB = async () => {
     try {
@@ -9,4 +11,4 @@ export const connectDB = async () => {
         console.error("Error connecting to MONGODB", error);
         process.exit(1)
     }
-}
+}  
