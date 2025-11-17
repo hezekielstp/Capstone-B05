@@ -28,3 +28,10 @@ dump/
 data/
 
 inference/__pycache__/
+
+# ESP32-CAM uploads - ignore actual image files but keep directory structure
+uploads/camera_captures/*.jpg
+uploads/camera_captures/*.jpeg
+uploads/camera_captures/*.png
+!uploads/camera_captures/README.md
+!uploads/camera_captures/.gitkeep

@@ -1,0 +1,2 @@
+# This file ensures the camera_captures directory is tracked in git
+# Actual photo files are ignored via .gitignore
