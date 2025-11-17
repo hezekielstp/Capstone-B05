@@ -80,7 +80,8 @@ export default function RiwayatSesi({
             );
 
             if (sortedCap[0]?.imageUrl) {
-              photo = sortedCap[0].imageUrl;
+              // ✅ Build full URL for photo from backend
+              photo = `${API_BASE}${sortedCap[0].imageUrl}`;
             }
           }
 

@@ -72,8 +72,8 @@ export default function RiwayatDetailPage() {
                 : it.mood === "Netral"
                 ? "/netral.png"
                 : "/negatif.png"),
-            photo:
-              it.photo ||
+            // ✅ Use photo from backend if available, otherwise fallback to dummy
+            photo: it.photo || 
               (it.mood === "Positif"
                 ? "/rekaman/positif.png"
                 : it.mood === "Netral"
