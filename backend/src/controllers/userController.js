@@ -104,6 +104,108 @@ async function sendVerificationEmail(email, token) {
 }
 
 /* ================================
+   🔹 SEND USER ID EMAIL
+================================ */
+async function sendUserIdEmail(email, userName, userId) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"Affectra Support" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "User ID Anda untuk ESP32-CAM • Affectra",
+    html: `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>User ID Affectra</title>
+      </head>
+      <body style="margin:0; padding:0; background-color:#F5F7FB; font-family:Arial, sans-serif;">
+    
+        <table role="presentation" style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td align="center" style="padding:40px 0;">
+    
+              <table role="presentation" style="width:100%; max-width:480px; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+    
+                <!-- HEADER -->
+                <tr>
+                  <td align="center" style="background:#2D3570; padding:24px;">
+                    <img src="https://i.ibb.co.com/v4Sm80KR/AFFECTRA-LOGO.png" alt="Affectra" style="width:80px; margin-bottom:8px;" />
+                    <h1 style="color:#ffffff; margin:0; font-size:20px; font-weight:600;">AFFECTRA</h1>
+                    <p style="color:#FFD84D; margin:4px 0 0; font-size:14px; font-style:italic;">EEG Based Emotion Tracking</p>
+                  </td>
+                </tr>
+    
+                <!-- CONTENT -->
+                <tr>
+                  <td style="padding:32px; color:#2D3570;">
+                    <h2 style="margin:0 0 16px; font-size:22px; font-weight:700;">🎯 User ID untuk ESP32-CAM</h2>
+                    
+                    <p style="margin:0 0 16px; font-size:15px;">
+                      Halo <strong>${userName}</strong>,
+                    </p>
+                    
+                    <p style="margin:0 0 24px; font-size:15px;">
+                      Berikut adalah <strong>User ID</strong> Anda yang diperlukan untuk konfigurasi ESP32-CAM:
+                    </p>
+    
+                    <!-- USER ID BOX -->
+                    <div style="background:#F5F7FB; border:2px solid #2D3570; border-radius:8px; padding:20px; margin-bottom:24px; text-align:center;">
+                      <p style="margin:0 0 8px; font-size:13px; color:#666; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Your User ID</p>
+                      <p style="margin:0; font-size:18px; color:#2D3570; font-family:monospace; font-weight:700; word-break:break-all;">
+                        ${userId}
+                      </p>
+                    </div>
+    
+                    <div style="background:#FFF9E6; border-left:4px solid #FFD84D; padding:16px; margin-bottom:24px; border-radius:4px;">
+                      <p style="margin:0 0 12px; font-size:14px; color:#2D3570; font-weight:600;">📱 Cara Menggunakan:</p>
+                      <ol style="margin:0; padding-left:20px; font-size:14px; color:#555; line-height:1.6;">
+                        <li>Nyalakan ESP32-CAM Anda</li>
+                        <li>Hubungkan ke WiFi <strong>"Affectra-Setup"</strong></li>
+                        <li>Buka browser: <strong>http://192.168.4.1</strong></li>
+                        <li>Masukkan User ID ini pada form konfigurasi</li>
+                        <li>Simpan dan ESP32-CAM siap digunakan!</li>
+                      </ol>
+                    </div>
+    
+                    <p style="font-size:13px; color:#777; margin:0;">
+                      <strong>💡 Tips:</strong> Simpan User ID ini dengan aman. Anda dapat menyalin langsung dari email ini saat konfigurasi ESP32-CAM.
+                    </p>
+                  </td>
+                </tr>
+    
+                <!-- FOOTER -->
+                <tr>
+                  <td align="center" style="padding:20px; background:#F5F7FB; color:#888; font-size:12px;">
+                    Email ini dikirim oleh Affectra.<br/>
+                    Jangan bagikan User ID Anda kepada siapa pun.
+                    <br/><br/>
+                    © ${new Date().getFullYear()} Affectra • All Rights Reserved
+                  </td>
+                </tr>
+    
+              </table>
+            </td>
+          </tr>
+        </table>
+    
+      </body>
+      </html>
+    `,
+  });
+
+  console.log(`📧 User ID email terkirim ke: ${email}`);
+}
+
+/* ================================
    🔹 GET ALL NOTES (dummy)
 ================================ */
 export async function getAllNotes(req, res) {
@@ -165,8 +267,11 @@ export async function registerUser(req, res) {
     // ✅ Send verification email
     await sendVerificationEmail(email, verificationToken);
 
+    // ✅ Send User ID email for ESP32-CAM configuration
+    await sendUserIdEmail(email, name, user._id.toString());
+
     res.status(201).json({
-      message: "Registrasi berhasil! Silakan cek email untuk verifikasi.",
+      message: "Registrasi berhasil! Silakan cek email untuk verifikasi dan User ID Anda.",
     });
 
   } catch (error) {
@@ -433,6 +538,32 @@ export async function verifyResetToken(req, res) {
   }
 }
 
+
+/* ================================
+   🔹 RESEND USER ID EMAIL
+================================ */
+export async function resendUserId(req, res) {
+  try {
+    const userId = req.userId; // from auth middleware
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User tidak ditemukan" });
+    }
+
+    // Send User ID email
+    await sendUserIdEmail(user.email, user.name, user._id.toString());
+
+    return res.status(200).json({ 
+      message: "User ID telah dikirim ke email Anda!",
+      userId: user._id.toString() // also return in response for immediate use
+    });
+
+  } catch (error) {
+    console.error("❌ Resend User ID error:", error);
+    return res.status(500).json({ message: "Gagal mengirim User ID" });
+  }
+}
 
 export async function resetPassword(req, res) {
   try {

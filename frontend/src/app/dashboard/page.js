@@ -12,6 +12,7 @@ import RekamFoto from "./components/rekamfoto";
 import RekapEmosi from "./components/rekapemosi";
 import RiwayatSesi from "./components/riwayatsesi";
 import CatatanAnda from "./components/catatanaanda";
+import UserIdCard from "./components/useridcard";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -240,8 +241,11 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Catatan */}
-          <CatatanAnda />
+          {/* User ID + Catatan */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <UserIdCard />
+            <CatatanAnda />
+          </div>
         </main>
       </div>
 
