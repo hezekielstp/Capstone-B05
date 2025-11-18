@@ -6,7 +6,7 @@ import Note from "../models/note.model.js";
 export async function createNote(req, res) {
   try {
     const { noteContent, sessionId, noteType } = req.body;
-    const userId = req.user?.id || req.userId;
+    const userId = req.userId;  // ✅ Fixed: authMiddleware sets req.userId directly
 
     if (!noteContent || noteContent.trim() === "") {
       return res.status(400).json({ message: "Isi catatan tidak boleh kosong" });
@@ -31,7 +31,7 @@ export async function createNote(req, res) {
 ============================ */
 export async function getNotes(req, res) {
   try {
-    const userId = req.user?.id || req.userId;
+    const userId = req.userId;  // ✅ Fixed: authMiddleware sets req.userId directly
 
     const notes = await Note.find({ userId })
       .populate("sessionId", "emotionLabel createdAt")
@@ -49,7 +49,7 @@ export async function getNotes(req, res) {
 export async function deleteNote(req, res) {
   try {
     const noteId = req.params.id;
-    const userId = req.user?.id || req.userId;
+    const userId = req.userId;  // ✅ Fixed: authMiddleware sets req.userId directly
 
     const note = await Note.findOne({ _id: noteId, userId });
     if (!note) {
