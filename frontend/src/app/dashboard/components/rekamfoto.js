@@ -11,38 +11,71 @@ export default function RekamFoto({ latestEmotion, onPhotoUpdate }) {
   useEffect(() => {
     const updatePhoto = async () => {
       try {
-        // ✅ Ambil data dari backend
-        const res = await fetch(
-          process.env.NEXT_PUBLIC_API_URL + "/api/captures"
-        );
-        const json = await res.json();
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-        // Jika tidak ada data → fallback
-        if (!json?.data || json.data.length === 0) {
+        if (!token) {
           setPhoto("/flowers.png");
-          if (onPhotoUpdate) onPhotoUpdate("/flowers.png");
           return;
         }
 
-        // ✅ Sort berdasarkan createdAt DESC → terbaru pertama
-        const sorted = [...json.data].sort(
+        // Get user's sessions first
+        const sessionRes = await fetch(`${API_BASE}/api/sessions`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!sessionRes.ok) {
+          setPhoto("/flowers.png");
+          return;
+        }
+
+        const sessionJson = await sessionRes.json();
+        const sessions = Array.isArray(sessionJson) ? sessionJson : sessionJson.data || [];
+
+        if (sessions.length === 0) {
+          setPhoto("/flowers.png");
+          return;
+        }
+
+        // Get latest session
+        const latestSession = sessions.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+        )[0];
 
-        const latest = sorted[0];
+        // Fetch photos for latest session
+        const captureRes = await fetch(`${API_BASE}/api/captures/session/${latestSession._id}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        if (latest?.imageUrl) {
-          setPhoto(latest.imageUrl);
-          if (onPhotoUpdate) onPhotoUpdate(latest.imageUrl);
+        if (!captureRes.ok) {
+          setPhoto("/flowers.png");
+          return;
+        }
+
+        const captureJson = await captureRes.json();
+        const captures = captureJson.data || [];
+
+        if (captures.length > 0) {
+          // Get latest photo
+          const latestCapture = captures.sort(
+            (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+          )[0];
+          
+          const photoUrl = `${API_BASE}${latestCapture.imageUrl}`;
+          setPhoto(photoUrl);
+          if (onPhotoUpdate) onPhotoUpdate(photoUrl);
         } else {
-          // fallback
           setPhoto("/flowers.png");
           if (onPhotoUpdate) onPhotoUpdate("/flowers.png");
         }
       } catch (err) {
         console.error("Gagal fetch foto:", err);
-
-        // fallback
         setPhoto("/flowers.png");
         if (onPhotoUpdate) onPhotoUpdate("/flowers.png");
       }
