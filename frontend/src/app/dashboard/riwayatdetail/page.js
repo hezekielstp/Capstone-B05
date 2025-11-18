@@ -115,19 +115,36 @@ export default function RiwayatDetailPage() {
                 const captureJson = await captureRes.json();
                 const captures = captureJson.data || [];
                 
-                const latestPhoto = captures.length > 0
-                  ? `${API_BASE}${captures[captures.length - 1].imageUrl}`
-                  : null;
+                // ✅ Find photo with CLOSEST timestamp to session creation time
+                if (captures.length > 0) {
+                  const sessionTime = new Date(session.createdAt).getTime();
+                  
+                  let closestCapture = null;
+                  let smallestDiff = Infinity;
+                  
+                  for (const capture of captures) {
+                    const captureTime = new Date(capture.timestamp).getTime();
+                    const timeDiff = Math.abs(sessionTime - captureTime);
+                    
+                    if (timeDiff < smallestDiff) {
+                      smallestDiff = timeDiff;
+                      closestCapture = capture;
+                    }
+                  }
 
-                return {
-                  ...session,
-                  photo: latestPhoto,
-                };
+                  if (closestCapture) {
+                    return {
+                      ...session,
+                      photo: `${API_BASE}${closestCapture.imageUrl}`,
+                    };
+                  }
+                }
               }
             } catch (err) {
               console.error(`Error fetching photos for session ${session._id}:`, err);
             }
 
+            // Fallback to default photos
             return {
               ...session,
               photo: session.mood === "Positif"

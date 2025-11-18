@@ -75,13 +75,25 @@ export default function RiwayatSesi({
           let photo = "/flowers.png";
 
           if (capJson?.data && capJson.data.length > 0) {
-            let sortedCap = [...capJson.data].sort(
-              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-            );
+            // ✅ Find photo with CLOSEST timestamp to session creation time
+            const sessionTime = new Date(s.createdAt).getTime();
+            
+            let closestCapture = null;
+            let smallestDiff = Infinity;
+            
+            for (const capture of capJson.data) {
+              const captureTime = new Date(capture.timestamp).getTime();
+              const timeDiff = Math.abs(sessionTime - captureTime);
+              
+              if (timeDiff < smallestDiff) {
+                smallestDiff = timeDiff;
+                closestCapture = capture;
+              }
+            }
 
-            if (sortedCap[0]?.imageUrl) {
+            if (closestCapture?.imageUrl) {
               // ✅ Build full URL for photo from backend
-              photo = `${API_BASE}${sortedCap[0].imageUrl}`;
+              photo = `${API_BASE}${closestCapture.imageUrl}`;
             }
           }
 
