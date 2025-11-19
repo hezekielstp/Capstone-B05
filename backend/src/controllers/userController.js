@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
 /* ================================
    🔹 SEND VERIFICATION EMAIL
 ================================ */
-async function sendVerificationEmail(email, token) {
+async function sendVerificationEmail(email, token, verificationCode) {
   const verifyURL = `http://localhost:3000/verify-email?token=${token}`;
 
   const transporter = nodemailer.createTransport({
@@ -52,8 +52,19 @@ async function sendVerificationEmail(email, token) {
                   <td style="padding:32px; color:#2D3570;">
                     <h2 style="margin:0 0 16px; font-size:22px; font-weight:700;">Verifikasi Email Anda</h2>
                     <p style="margin:0 0 24px; font-size:15px;">
-                      Terima kasih sudah mendaftar! Klik tombol di bawah untuk memverifikasi email Anda dan mulai menggunakan Affectra.
+                      Terima kasih sudah mendaftar! Gunakan salah satu cara berikut untuk memverifikasi email Anda:
                     </p>
+
+                    <!-- VERIFICATION CODE BOX -->
+                    <div style="background:#F5F7FB; border:2px dashed #2D3570; border-radius:8px; padding:20px; text-align:center; margin-bottom:24px;">
+                      <p style="margin:0 0 8px; font-size:14px; color:#666;">Kode Verifikasi Anda:</p>
+                      <p style="margin:0; font-size:32px; font-weight:700; letter-spacing:8px; color:#2D3570; font-family:monospace;">
+                        ${verificationCode}
+                      </p>
+                      <p style="margin:8px 0 0; font-size:13px; color:#888;">Masukkan kode ini di halaman verifikasi</p>
+                    </div>
+
+                    <p style="text-align:center; margin:0 0 16px; font-size:14px; color:#888;">— ATAU —</p>
     
                     <p style="text-align:center; margin-bottom:32px;">
                       <a href="${verifyURL}" 
@@ -67,7 +78,7 @@ async function sendVerificationEmail(email, token) {
                           text-decoration:none;
                           font-weight:600;
                         ">
-                        Verifikasi Email
+                        Klik untuk Verifikasi
                       </a>
                     </p>
     
@@ -234,10 +245,12 @@ export async function registerUser(req, res) {
       if (!existingUser.isVerified) {
         // kirim ulang email verifikasi
         const verificationToken = crypto.randomBytes(32).toString("hex");
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
         existingUser.verificationToken = verificationToken;
+        existingUser.verificationCode = verificationCode;
         await existingUser.save();
 
-        await sendVerificationEmail(email, verificationToken);
+        await sendVerificationEmail(email, verificationToken, verificationCode);
 
         return res.status(200).json({
           message: "Akun sudah terdaftar namun belum diverifikasi. Email verifikasi baru telah dikirim."
@@ -250,8 +263,9 @@ export async function registerUser(req, res) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Generate verification token
+    // ✅ Generate verification token and 6-digit code
     const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
 
     const user = new User({
       name,
@@ -259,13 +273,14 @@ export async function registerUser(req, res) {
       phoneNumber,
       passwordHash: hashedPassword,
       verificationToken,
+      verificationCode,
       isVerified: false,
     });
 
     await user.save();
 
-    // ✅ Send verification email
-    await sendVerificationEmail(email, verificationToken);
+    // ✅ Send verification email with both token and code
+    await sendVerificationEmail(email, verificationToken, verificationCode);
 
     // ✅ Send User ID email for ESP32-CAM configuration
     await sendUserIdEmail(email, name, user._id.toString());
@@ -285,20 +300,30 @@ export async function registerUser(req, res) {
 ================================ */
 export async function verifyEmail(req, res) {
   try {
-    const { token } = req.query;
+    const { token, code, email } = req.query;
 
-    if (!token) {
-      return res.status(400).json({ message: "Token tidak ditemukan" });
-    }
+    let user = null;
 
-    const user = await User.findOne({ verificationToken: token });
-
-    if (!user) {
-      return res.status(400).json({ message: "Token tidak valid" });
+    // ✅ Support both token and code verification
+    if (code && email) {
+      // Verify by 6-digit code + email
+      user = await User.findOne({ email, verificationCode: code });
+      if (!user) {
+        return res.status(400).json({ message: "Kode verifikasi tidak valid atau email salah" });
+      }
+    } else if (token) {
+      // Verify by token (original method)
+      user = await User.findOne({ verificationToken: token });
+      if (!user) {
+        return res.status(400).json({ message: "Token tidak valid" });
+      }
+    } else {
+      return res.status(400).json({ message: "Token atau kode verifikasi tidak ditemukan" });
     }
 
     user.isVerified = true;
     user.verificationToken = null;
+    user.verificationCode = null;
     await user.save();
 
     res.status(200).json({ message: "Email berhasil diverifikasi!" });
