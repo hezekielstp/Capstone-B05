@@ -56,28 +56,61 @@ export default function RekapEmosi() {
 
   const [selectedRange, setSelectedRange] = useState("Rekap Emosi 1 Hari");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [sessionsData, setSessionsData] = useState(globalSessions.length ? globalSessions : dummyRiwayat);
+  const [sessionsData, setSessionsData] = useState([]);
 
-  // ===== Sinkronisasi real-time dengan globalSessions & sessionStorage =====
+  // ===== Fetch real sessions from backend =====
   useEffect(() => {
-    const syncData = () => {
+    const fetchSessions = async () => {
       try {
-        const stored = typeof window !== "undefined" ? sessionStorage.getItem("globalSessions") : null;
-        const parsed = stored ? JSON.parse(stored) : [];
-        if (parsed.length && parsed.length !== sessionsData.length) {
-          setSessionsData(parsed);
-        } else if (globalSessions.length && globalSessions.length !== sessionsData.length) {
-          setSessionsData(globalSessions);
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+        if (!token) {
+          // Use dummy data if not logged in
+          setSessionsData(dummyRiwayat);
+          return;
+        }
+
+        const res = await fetch(`${API_BASE}/api/sessions`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          console.error("Failed to fetch sessions:", res.status);
+          setSessionsData(dummyRiwayat);
+          return;
+        }
+
+        const json = await res.json();
+        const sessions = Array.isArray(json) ? json : json.data || [];
+
+        if (sessions.length > 0) {
+          // Map sessions to include timestamp
+          const mappedSessions = sessions.map(s => ({
+            mood: s.mood,
+            date: new Date(s.createdAt).toLocaleDateString("id-ID"),
+            timestamp: new Date(s.createdAt),
+          }));
+          setSessionsData(mappedSessions);
+          
+          // Update global sessions for sync
+          setGlobalSessions(mappedSessions);
+        } else {
+          setSessionsData(dummyRiwayat);
         }
       } catch (e) {
-        console.warn("Sync rekapemosi error:", e);
+        console.warn("Fetch sessions error:", e);
+        setSessionsData(dummyRiwayat);
       }
     };
 
-    syncData(); // sync langsung di awal
-    const interval = setInterval(syncData, 2000);
+    fetchSessions(); // initial fetch
+    const interval = setInterval(fetchSessions, 10000); // refresh every 10s
     return () => clearInterval(interval);
-  }, [sessionsData]);
+  }, []);
 
   // ===== Hitung persentase emosi berdasarkan range =====
   const data = useMemo(() => {

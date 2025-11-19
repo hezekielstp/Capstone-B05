@@ -7,6 +7,13 @@ import eegSessionRoutes from "./routes/eegSessionRoutes.js";
 import cameraCaptureRoutes from "./routes/cameraCaptureRoutes.js";
 import validateCaptureRoutes from "./routes/validateCaptureRoutes.js";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import { startInferenceService } from "./services/inferenceService.js";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Inisialisasi konfigurasi environment (.env)
 dotenv.config();
@@ -14,6 +21,13 @@ dotenv.config();
 // Inisialisasi express app
 const app = express();
 app.use(cors());    
+
+// Serve static files from uploads directory (for camera captures)
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+
+// ESP32 camera upload route - MUST come before express.json() middleware
+// Uses express.raw() to accept binary JPEG data
+app.use("/api/camera", express.raw({ type: "image/jpeg", limit: "10mb" }), cameraCaptureRoutes);
 
 // Middleware untuk membaca JSON dari request body
 app.use(express.json());
@@ -34,4 +48,7 @@ app.use("/api/notes", noteRoutes);
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`✅ Server started on PORT: ${PORT}`);
+  
+  // Start automatic inference service
+  startInferenceService();
 });

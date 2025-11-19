@@ -1,4 +1,101 @@
 import CameraCapture from "../models/cameraCapture.model.js";
+import EEGSession from "../models/eegSession.model.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/**
+ * UPLOAD from ESP32-CAM
+ * Accepts raw JPEG binary data from ESP32
+ * Links photo to user's latest EEG session
+ */
+export const uploadFromESP32 = async (req, res) => {
+  try {
+    // Get user ID from header (sent by ESP32)
+    const userId = req.headers["x-user-id"];
+    
+    if (!userId) {
+      return res.status(400).json({
+        message: "X-User-ID header is required",
+      });
+    }
+
+    // Get raw binary data (JPEG)
+    const imageBuffer = req.body;
+    
+    if (!imageBuffer || imageBuffer.length === 0) {
+      return res.status(400).json({
+        message: "No image data received",
+      });
+    }
+
+    console.log(`📸 Received photo upload: ${imageBuffer.length} bytes from user ${userId}`);
+
+    // Find user's latest EEG session, or create one if doesn't exist
+    let latestSession = await EEGSession.findOne({ userId })
+      .sort({ createdAt: -1 })
+      .limit(1);
+
+    if (!latestSession) {
+      console.log(`⚠️ No session found for user ${userId}, creating new session...`);
+      // Auto-create a session with neutral mood for photo capture
+      latestSession = await EEGSession.create({
+        userId,
+        mood: "Netral",
+        probabilities: [0.33, 0.34, 0.33], // Neutral probabilities
+        note: "Auto-created session for ESP32-CAM photo capture",
+      });
+      console.log(`✅ Created new session: ${latestSession._id}`);
+    }
+
+    // Generate unique filename with timestamp
+    const timestamp = new Date();
+    const filename = `camera_${userId}_${timestamp.getTime()}.jpg`;
+    const uploadDir = path.join(__dirname, "..", "..", "uploads", "camera_captures");
+    const filePath = path.join(uploadDir, filename);
+
+    // Ensure upload directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Save image to disk
+    fs.writeFileSync(filePath, imageBuffer);
+
+    console.log(`✅ Photo saved to: ${filePath}`);
+
+    // Create CameraCapture record
+    const imageUrl = `/uploads/camera_captures/${filename}`;
+    const newCapture = await CameraCapture.create({
+      sessionId: latestSession._id,
+      timestamp,
+      imageUrl,
+      contextNote: "Auto-captured by ESP32-CAM",
+    });
+
+    console.log(`✅ CameraCapture record created: captureId=${newCapture.captureId}`);
+
+    return res.status(201).json({
+      message: "Photo uploaded successfully",
+      data: {
+        captureId: newCapture.captureId,
+        sessionId: latestSession._id,
+        imageUrl,
+        timestamp,
+      },
+    });
+  } catch (error) {
+    console.error("uploadFromESP32 Error:", error);
+    res.status(500).json({ 
+      message: "Server error during photo upload", 
+      error: error.message 
+    });
+  }
+};
 
 /**
  * CREATE new camera capture record
@@ -57,7 +154,16 @@ export const getCaptureById = async (req, res) => {
   try {
     const { captureId } = req.params;
 
-    const capture = await CameraCapture.findOne({ captureId: Number(captureId) });
+    // Validate captureId is a valid number
+    const parsedId = Number(captureId);
+    if (isNaN(parsedId)) {
+      return res.status(400).json({ 
+        message: "Invalid captureId. Must be a number.",
+        received: captureId 
+      });
+    }
+
+    const capture = await CameraCapture.findOne({ captureId: parsedId });
 
     if (!capture) {
       return res.status(404).json({ message: "Capture not found" });
