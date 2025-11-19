@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
-import { triggerInferenceForUser } from "../services/inferenceService.js";
+import { startUserInferenceSession } from "../services/inferenceService.js";
 
 /* ================================
    🔹 SEND VERIFICATION EMAIL
@@ -374,15 +374,14 @@ export async function loginUser(req, res) {
       },
     });
 
-    // 🧠 Automatically trigger inference after successful login (non-blocking)
-    triggerInferenceForUser(user._id)
-      .then(() => {
-        console.log(`✅ Auto-inference triggered for user ${user._id} after login`);
-      })
-      .catch((err) => {
-        console.error(`⚠️  Auto-inference failed for user ${user._id}:`, err.message);
-        // Don't block login if inference fails
-      });
+    // 🧠 Automatically start inference session after successful login
+    try {
+      const result = startUserInferenceSession(user._id);
+      console.log(`✅ Inference session started for user ${user._id} after login`);
+    } catch (err) {
+      console.error(`⚠️  Failed to start inference session for user ${user._id}:`, err.message);
+      // Don't block login if inference fails
+    }
 
   } catch (error) {
     console.error("❌ Login error:", error);

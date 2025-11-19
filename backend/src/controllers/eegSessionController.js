@@ -1,5 +1,12 @@
 import EEGSession from "../models/eegSession.model.js";
-import { spawn } from "child_process"; // 🧩 Tambahan untuk jalankan Python script
+import { spawn } from "child_process";
+import {
+  startUserInferenceSession,
+  stopUserInferenceSession,
+  pauseUserInferenceSession,
+  resumeUserInferenceSession,
+  getUserInferenceStatus,
+} from "../services/inferenceService.js";
 
 // Ambil semua sesi milik user yg login
 export async function getSessions(req, res) {
@@ -118,6 +125,95 @@ export async function runRealtimeInference(req, res) {
   } catch (err) {
     return res.status(500).json({
       message: "Gagal menjalankan inference",
+      error: err.message,
+    });
+  }
+}
+
+// ===============================================================
+// 🎮 INFERENCE SESSION CONTROLS
+// ===============================================================
+
+/**
+ * Start automatic inference session (every 10 seconds)
+ */
+export function startInferenceSession(req, res) {
+  try {
+    const userId = req.userId;
+    const result = startUserInferenceSession(userId);
+    
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to start inference session",
+      error: err.message,
+    });
+  }
+}
+
+/**
+ * Stop automatic inference session
+ */
+export function stopInferenceSession(req, res) {
+  try {
+    const userId = req.userId;
+    const result = stopUserInferenceSession(userId);
+    
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to stop inference session",
+      error: err.message,
+    });
+  }
+}
+
+/**
+ * Pause inference session (keeps running but doesn't save to DB)
+ */
+export function pauseInferenceSession(req, res) {
+  try {
+    const userId = req.userId;
+    const result = pauseUserInferenceSession(userId);
+    
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to pause inference session",
+      error: err.message,
+    });
+  }
+}
+
+/**
+ * Resume inference session (start saving to DB again)
+ */
+export function resumeInferenceSession(req, res) {
+  try {
+    const userId = req.userId;
+    const result = resumeUserInferenceSession(userId);
+    
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to resume inference session",
+      error: err.message,
+    });
+  }
+}
+
+/**
+ * Get inference session status
+ */
+export function getInferenceStatus(req, res) {
+  try {
+    const userId = req.userId;
+    const status = getUserInferenceStatus(userId);
+    
+    return res.status(200).json(status);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to get inference status",
       error: err.message,
     });
   }

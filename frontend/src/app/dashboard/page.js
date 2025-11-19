@@ -13,6 +13,7 @@ import RekapEmosi from "./components/rekapemosi";
 import RiwayatSesi from "./components/riwayatsesi";
 import CatatanAnda from "./components/catatanaanda";
 import UserIdCard from "./components/useridcard";
+import InferenceControls from "./components/inferencecontrols";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -223,6 +224,11 @@ export default function DashboardPage() {
               firstName={firstName}
             />
             <RekamFoto />
+          </div>
+
+          {/* Kontrol Inference */}
+          <div className="mb-6">
+            <InferenceControls />
           </div>
 
           {/* Rekap + Riwayat */}
