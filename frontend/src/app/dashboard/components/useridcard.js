@@ -89,7 +89,7 @@ export default function UserIdCard() {
               User ID untuk ESP32-CAM
             </h4>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Gunakan User ID ini untuk konfigurasi ESP32-CAM Anda di <strong>http://192.168.4.1</strong>
+              Gunakan User ID ini untuk konfigurasi ESP32-CAM Anda di <strong>http://10.86.184.210:8080</strong>
             </p>
           </div>
         </div>
@@ -165,8 +165,8 @@ export default function UserIdCard() {
           <p className="text-xs text-[#2D3570] font-semibold mb-2">💡 Cara Menggunakan:</p>
           <ol className="text-xs text-gray-700 space-y-1 pl-4 list-decimal">
             <li>Nyalakan ESP32-CAM</li>
-            <li>Hubungkan ke WiFi <strong>&quot;Affectra-Setup&quot;</strong></li>
-            <li>Buka browser: <strong>http://192.168.4.1</strong></li>
+            <li>Hubungkan ke WiFi <strong>&quot;123&quot;</strong></li>
+            <li>Buka browser: <strong>http://10.86.184.210:8080</strong></li>
             <li>Paste User ID ini pada form konfigurasi</li>
             <li>Simpan - ESP32-CAM siap digunakan!</li>
           </ol>
