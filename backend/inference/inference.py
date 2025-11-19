@@ -220,9 +220,25 @@ def run_inference():
     if buffer.is_ready():
         prediction, probabilities = buffer.predict()
         
+        # Translate English labels to Indonesian for MongoDB schema
+        label_translation = {
+            "POSITIVE": "Positif",
+            "NEUTRAL": "Netral",
+            "NEGATIVE": "Negatif",
+            "positive": "Positif",
+            "neutral": "Netral",
+            "negative": "Negatif",
+            "Positive": "Positif",
+            "Neutral": "Netral",
+            "Negative": "Negatif"
+        }
+        
+        # Apply translation (fallback to original if not found)
+        translated_prediction = label_translation.get(prediction, prediction)
+        
         # Format output for Node.js
         result = {
-            "prediction": prediction,
+            "prediction": translated_prediction,
             "probabilities": list(probabilities.values()),
             "source": data_source,
             "samples": len(eeg_data)
