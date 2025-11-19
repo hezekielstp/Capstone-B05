@@ -9,7 +9,8 @@ import validateCaptureRoutes from "./routes/validateCaptureRoutes.js";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import { startInferenceService } from "./services/inferenceService.js";
+// ❌ REMOVED: Automatic inference service (only active users should trigger inference)
+// import { startInferenceService } from "./services/inferenceService.js";
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -48,7 +49,9 @@ app.use("/api/notes", noteRoutes);
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`✅ Server started on PORT: ${PORT}`);
+  console.log(`ℹ️  Inference runs on-demand only (via POST /api/sessions/inference)`);
   
-  // Start automatic inference service
-  startInferenceService();
+  // ❌ DISABLED: Automatic inference for all users every 10 seconds
+  // Only authenticated users trigger their own inference via API endpoint
+  // startInferenceService();
 });
