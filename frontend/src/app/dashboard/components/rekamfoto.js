@@ -45,29 +45,9 @@ export default function RekamFoto({ latestEmotion, onPhotoUpdate }) {
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         )[0];
 
-        // Fetch photos for latest session
-        const captureRes = await fetch(`${API_BASE}/api/captures/session/${latestSession._id}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!captureRes.ok) {
-          setPhoto("/flowers.png");
-          return;
-        }
-
-        const captureJson = await captureRes.json();
-        const captures = captureJson.data || [];
-
-        if (captures.length > 0) {
-          // Get latest photo
-          const latestCapture = captures.sort(
-            (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-          )[0];
-          
-          const photoUrl = `${API_BASE}${latestCapture.imageUrl}`;
+        // ✅ Use photoPath directly from session (permanently assigned)
+        if (latestSession.photoPath) {
+          const photoUrl = `${API_BASE}${latestSession.photoPath}`;
           setPhoto(photoUrl);
           if (onPhotoUpdate) onPhotoUpdate(photoUrl);
         } else {

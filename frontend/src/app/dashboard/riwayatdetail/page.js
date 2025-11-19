@@ -98,63 +98,26 @@ export default function RiwayatDetailPage() {
         }
 
         // Fetch photos for each session
-        const sessionsWithPhotos = await Promise.all(
-          sessions.map(async (session) => {
-            try {
-              const captureRes = await fetch(
-                `${API_BASE}/api/captures/session/${session._id}`,
-                {
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
+        const sessionsWithPhotos = sessions.map((session) => {
+          // ✅ Use photoPath directly from session (permanently assigned)
+          let photo = "/flowers.png"; // Default fallback
+          
+          if (session.photoPath) {
+            photo = `${API_BASE}${session.photoPath}`;
+          } else {
+            // Fallback to mood-specific default images
+            photo = session.mood === "Positif"
+              ? "/rekaman/positif.png"
+              : session.mood === "Netral"
+                ? "/rekaman/netral.png"
+                : "/rekaman/negatif.png";
+          }
 
-              if (captureRes.ok) {
-                const captureJson = await captureRes.json();
-                const captures = captureJson.data || [];
-                
-                // ✅ Find photo with CLOSEST timestamp to session creation time
-                if (captures.length > 0) {
-                  const sessionTime = new Date(session.createdAt).getTime();
-                  
-                  let closestCapture = null;
-                  let smallestDiff = Infinity;
-                  
-                  for (const capture of captures) {
-                    const captureTime = new Date(capture.timestamp).getTime();
-                    const timeDiff = Math.abs(sessionTime - captureTime);
-                    
-                    if (timeDiff < smallestDiff) {
-                      smallestDiff = timeDiff;
-                      closestCapture = capture;
-                    }
-                  }
-
-                  if (closestCapture) {
-                    return {
-                      ...session,
-                      photo: `${API_BASE}${closestCapture.imageUrl}`,
-                    };
-                  }
-                }
-              }
-            } catch (err) {
-              console.error(`Error fetching photos for session ${session._id}:`, err);
-            }
-
-            // Fallback to default photos
-            return {
-              ...session,
-              photo: session.mood === "Positif"
-                ? "/rekaman/positif.png"
-                : session.mood === "Netral"
-                  ? "/rekaman/netral.png"
-                  : "/rekaman/negatif.png",
-            };
-          })
-        );
+          return {
+            ...session,
+            photo,
+          };
+        });
 
         // Map to display format
         const mapped = sessionsWithPhotos.map((s) => {
