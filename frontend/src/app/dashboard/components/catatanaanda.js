@@ -9,11 +9,12 @@ export default function CatatanAnda() {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   // ✅ Ambil catatan saat pertama kali page dibuka
   useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    
     async function fetchNotes() {
       try {
         const res = await fetch(`${API_URL}/api/notes`, {
@@ -28,11 +29,13 @@ export default function CatatanAnda() {
     }
 
     if (token) fetchNotes();
-  }, [token]);
+  }, [API_URL]);
 
   // ✅ Tambah catatan ke database
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     try {
       const res = await fetch(`${API_URL}/api/notes`, {
@@ -57,6 +60,8 @@ export default function CatatanAnda() {
 
   // ✅ Hapus catatan dari database
   const handleDeleteMainNote = async (id) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    
     try {
       await fetch(`${API_URL}/api/notes/${id}`, {
         method: "DELETE",
@@ -74,14 +79,28 @@ export default function CatatanAnda() {
       <h3 className="text-[#2D3570] font-semibold mb-3 text-lg">Catatan Anda</h3>
       <div className="bg-white rounded-2xl shadow p-5">
         {notes.map((note) => (
-          <div key={note._id} className="flex items-center justify-between bg-[#F5F7FB] rounded-lg p-3 mb-3">
-            <p className="text-sm text-gray-700 flex-1">{note.noteContent}</p>
-            <button
-              onClick={() => handleDeleteMainNote(note._id)}
-              className="text-[#FF5A5A] hover:text-red-700 ml-3"
-            >
-              <FaTrashAlt />
-            </button>
+          <div key={note._id} className="bg-[#F5F7FB] rounded-lg p-3 mb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm text-gray-700 mb-1">{note.noteContent}</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(note.createdAt).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })} • {new Date(note.createdAt).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDeleteMainNote(note._id)}
+                className="text-[#FF5A5A] hover:text-red-700 ml-3 mt-1"
+              >
+                <FaTrashAlt />
+              </button>
+            </div>
           </div>
         ))}
 

@@ -12,6 +12,7 @@ import RekamFoto from "./components/rekamfoto";
 import RekapEmosi from "./components/rekapemosi";
 import RiwayatSesi from "./components/riwayatsesi";
 import CatatanAnda from "./components/catatanaanda";
+import UserIdCard from "./components/useridcard";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -90,61 +91,56 @@ export default function DashboardPage() {
   }, []);
 
   // ============================================================
-  // 🔹 2. Update waktu & tanggal setiap 10 detik (real-time)
-  // ============================================================
-  useEffect(() => {
-    const updateDateTime = () => {
-      const now = new Date();
-      setTime(now.toLocaleTimeString("id-ID", { hour12: false }));
-      setDate(now.toLocaleDateString("id-ID"));
-    };
-    updateDateTime();
-    const interval = setInterval(updateDateTime, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // ============================================================
-  // 🔹 3. Fetch emosi dari EEG server (real-time)
-  //      ❗ PERBAIKAN: gunakan base URL dari env (5001), tambah token opsional,
-  //      dan tangani abort/response non-OK.
+  // 🔹 2. Fetch emosi dari EEG server (real-time)
+  //      ✅ Update emotion, time, dan date dari session terakhir
   // ============================================================
   useEffect(() => {
     const API_BASE =
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   
-      const updateEmotionFromSession = async () => {
-        try {
-          const token = localStorage.getItem("token");
-      
-          const res = await fetch(`${API_BASE}/api/sessions`, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: token ? `Bearer ${token}` : "",
-            },
-          });
-      
-          if (!res.ok) {
-            console.error("Fetch sessions gagal:", res.status);
-            return;
-          }
-      
-          const json = await res.json();
-      
-          const sessions = json?.data || json?.sessions || [];
-      
-          if (sessions.length > 0) {
-            const latest = [...sessions].sort(
-              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-            )[0];
-      
-            if (latest?.mood) {
-              setEmotion(latest.mood);
-            }
-          }
-        } catch (err) {
-          console.error("Gagal ambil session:", err);
+    const updateEmotionFromSession = async () => {
+      try {
+        const token = localStorage.getItem("token");
+    
+        const res = await fetch(`${API_BASE}/api/sessions`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+    
+        if (!res.ok) {
+          console.error("Fetch sessions gagal:", res.status);
+          return;
         }
-      };
+    
+        const json = await res.json();
+    
+        // Handle both array format and {data: array} format
+        const sessions = Array.isArray(json) ? json : (json?.data || json?.sessions || []);
+    
+        if (sessions.length > 0) {
+          // Sort by createdAt descending to get latest
+          const latest = [...sessions].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          )[0];
+    
+          // Update emotion from session
+          if (latest?.mood) {
+            setEmotion(latest.mood);
+          }
+
+          // Update time and date from session's createdAt
+          if (latest?.createdAt) {
+            const sessionTime = new Date(latest.createdAt);
+            setTime(sessionTime.toLocaleTimeString("id-ID", { hour12: false }));
+            setDate(sessionTime.toLocaleDateString("id-ID"));
+          }
+        }
+      } catch (err) {
+        console.error("Gagal ambil session:", err);
+      }
+    };
   
     updateEmotionFromSession(); // initial
     const interval = setInterval(updateEmotionFromSession, 10000);
@@ -240,8 +236,11 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Catatan */}
-          <CatatanAnda />
+          {/* User ID + Catatan */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <UserIdCard />
+            <CatatanAnda />
+          </div>
         </main>
       </div>
 

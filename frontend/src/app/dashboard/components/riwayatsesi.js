@@ -58,34 +58,15 @@ export default function RiwayatSesi({
 
         let mapped = [];
 
-        // ✅ FETCH CAPTURE PER SESSION
+        // ✅ Use photoPath directly from session (no need to fetch captures)
         for (const s of sortedSessions) {
-          const capRes = await fetch(
-            `${API_BASE}/api/captures/session/${s._id}`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: token ? `Bearer ${token}` : "",
-              },
-            }
-          );
-
-          const capJson = await capRes.json();
-
-          let photo = "/flowers.png";
-
-          if (capJson?.data && capJson.data.length > 0) {
-            let sortedCap = [...capJson.data].sort(
-              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-            );
-
-            if (sortedCap[0]?.imageUrl) {
-              // ✅ Build full URL for photo from backend
-              photo = `${API_BASE}${sortedCap[0].imageUrl}`;
-            }
-          }
-
           const ts = new Date(s.createdAt);
+          
+          // ✅ Use photoPath if available, otherwise default to flowers
+          let photo = "/flowers.png";
+          if (s.photoPath) {
+            photo = `${API_BASE}${s.photoPath}`;
+          }
 
           mapped.push({
             _id: s._id,

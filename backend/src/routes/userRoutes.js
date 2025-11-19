@@ -3,11 +3,13 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
-  forgotPassword, // ✅ tambahan baru
+  forgotPassword,
   verifyEmail,
   resetPassword,
-  verifyResetToken
+  verifyResetToken,
+  resendUserId, // ✅ New: Resend User ID email
 } from "../controllers/userController.js";
+import { verifyToken } from "../middlewares/authMiddleware.js"; // ✅ Import auth middleware
 
 const router = express.Router();
 
@@ -19,8 +21,10 @@ router.get("/verify", verifyEmail);
 router.post("/reset-password", resetPassword);
 router.get("/verify-reset", verifyResetToken);
 
-
-// 🔹 Route Forgot Password (baru)
+// 🔹 Route Forgot Password
 router.post("/forgot-password", forgotPassword);
+
+// 🔹 Route Resend User ID (requires authentication)
+router.post("/resend-userid", verifyToken, resendUserId);
 
 export default router;

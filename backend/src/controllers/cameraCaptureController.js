@@ -79,6 +79,13 @@ export const uploadFromESP32 = async (req, res) => {
 
     console.log(`✅ CameraCapture record created: captureId=${newCapture.captureId}`);
 
+    // ✅ PERMANENTLY assign photo to session if not already set
+    if (!latestSession.photoPath) {
+      latestSession.photoPath = imageUrl;
+      await latestSession.save();
+      console.log(`✅ Photo permanently assigned to session ${latestSession._id}: ${imageUrl}`);
+    }
+
     return res.status(201).json({
       message: "Photo uploaded successfully",
       data: {
