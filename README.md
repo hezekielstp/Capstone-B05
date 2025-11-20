@@ -13,6 +13,8 @@ Penggunaan teknologi dalam kesehatan mental sering menimbulkan kekhawatiran, sep
 - Penyimpanan riwayat sesi untuk monitoring emosional jangka panjang
 - Mendukung proses self-monitoring sebagai bagian dari Cognitive Behavioral Therapy (CBT)
 
+> 📊 **[Lihat Status Lengkap Semua Fitur](FEATURE_STATUS.md)** - Dokumentasi lengkap tentang fitur yang sudah berfungsi dan yang masih dalam pengembangan
+
 ## Teknologi & Arsitektur
 ### Stack Utama
 Kami menggunakan **MERN Stack (MongoDB, Express.js, React.js, Node.js)** karena mendukung pengembangan aplikasi web berbasis data real-time dengan satu bahasa pemrograman: JavaScript.
