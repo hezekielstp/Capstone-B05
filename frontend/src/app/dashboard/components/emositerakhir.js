@@ -4,7 +4,17 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+// Dynamically detect backend URL based on current host
+const getApiBase = () => {
+  if (typeof window !== "undefined") {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:5001`;
+  }
+  return "http://localhost:5001";
+};
+
+const API_BASE = getApiBase();
 
 /*
   Komponen EmosiTerakhir — menampilkan emosi terakhir terdeteksi dari EEG.

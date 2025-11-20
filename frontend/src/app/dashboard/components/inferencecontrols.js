@@ -2,8 +2,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaPlay, FaPause, FaStop } from "react-icons/fa";
+import { getApiBaseUrl } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const API_BASE = getApiBaseUrl();
 
 export default function InferenceControls() {
   const [status, setStatus] = useState({

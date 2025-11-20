@@ -10,6 +10,8 @@ import {
   pauseInferenceSession,
   resumeInferenceSession,
   getInferenceStatus,
+  toggleManualControl,
+  setManualEmotion,
 } from "../controllers/eegSessionController.js";
 
 const router = express.Router();
@@ -32,5 +34,9 @@ router.post("/inference/stop", verifyToken, stopInferenceSession);
 router.post("/inference/pause", verifyToken, pauseInferenceSession);
 router.post("/inference/resume", verifyToken, resumeInferenceSession);
 router.get("/inference/status", verifyToken, getInferenceStatus);
+
+// 🎮 Manual control mode
+router.post("/inference/manual/toggle", verifyToken, toggleManualControl);
+router.post("/inference/manual/emotion", verifyToken, setManualEmotion);
 
 export default router;

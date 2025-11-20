@@ -5,6 +5,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FaUser, FaPhone, FaEnvelope, FaKey } from "react-icons/fa";
 import LoadingOverlay from "./LoadingOverlay";
+import { getApiBaseUrl } from "@/lib/api";
 
 export default function RegisterRightSection() {
   const router = useRouter();
@@ -21,7 +22,8 @@ export default function RegisterRightSection() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5001/api/users/register", {
+      const API_BASE = getApiBaseUrl();
+      const response = await fetch(`${API_BASE}/api/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

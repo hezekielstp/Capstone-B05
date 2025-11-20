@@ -8,8 +8,50 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Track active inference sessions per user
-// Structure: { userId: { intervalId, isActive, isPaused } }
+// Structure: { userId: { intervalId, isActive, isPaused, isManualMode } }
 const activeInferenceSessions = new Map();
+
+// Store manual emotion queue per user
+const manualEmotionQueue = new Map();
+
+/**
+ * Add manual emotion to queue for a specific user
+ */
+export function queueManualEmotion(userId, emotion) {
+  manualEmotionQueue.set(userId.toString(), emotion);
+  console.log(`🎮 Manual emotion queued for user ${userId}: ${emotion}`);
+}
+
+/**
+ * Create manual EEG session without running Python inference
+ */
+async function createManualSession(userId, emotion) {
+  try {
+    // Generate mock probabilities based on emotion
+    let probabilities;
+    if (emotion === "Positif") {
+      probabilities = [0.75, 0.15, 0.10];
+    } else if (emotion === "Negatif") {
+      probabilities = [0.10, 0.15, 0.75];
+    } else {
+      probabilities = [0.20, 0.60, 0.20];
+    }
+
+    const saved = await EEGSession.create({
+      userId,
+      mood: emotion,
+      probabilities,
+      photoPath: null,
+      note: "",
+    });
+
+    console.log(`🎮 Manual session created for user ${userId}: ${emotion}`);
+    return saved;
+  } catch (err) {
+    console.error(`❌ Failed to create manual session for user ${userId}:`, err.message);
+    throw err;
+  }
+}
 
 /**
  * Run Python inference for a specific user
@@ -111,12 +153,24 @@ export function startUserInferenceSession(userId) {
       return;
     }
 
-    const shouldSave = !session.isPaused;
-    
-    try {
-      await runInferenceForUser(userId, shouldSave);
-    } catch (err) {
-      console.error(`⚠️  Inference cycle failed for user ${userId}:`, err.message);
+    // Check if in manual mode - use queued emotion instead of Python
+    if (session.isManualMode) {
+      const queuedEmotion = manualEmotionQueue.get(userId.toString());
+      if (queuedEmotion && !session.isPaused) {
+        try {
+          await createManualSession(userId, queuedEmotion);
+        } catch (err) {
+          console.error(`⚠️  Manual session creation failed for user ${userId}:`, err.message);
+        }
+      }
+    } else {
+      // Normal Python inference mode
+      const shouldSave = !session.isPaused;
+      try {
+        await runInferenceForUser(userId, shouldSave);
+      } catch (err) {
+        console.error(`⚠️  Inference cycle failed for user ${userId}:`, err.message);
+      }
     }
   }, 10000); // 10 seconds
 
@@ -125,6 +179,7 @@ export function startUserInferenceSession(userId) {
     intervalId,
     isActive: true,
     isPaused: false,
+    isManualMode: false,
     startedAt: new Date(),
   });
 
@@ -189,6 +244,19 @@ export function resumeUserInferenceSession(userId) {
 }
 
 /**
+ * Get all active user IDs (users with running inference sessions)
+ */
+export function getActiveUserIds() {
+  const activeUserIds = [];
+  for (const [userId, session] of activeInferenceSessions.entries()) {
+    if (session.isActive) {
+      activeUserIds.push(userId);
+    }
+  }
+  return activeUserIds;
+}
+
+/**
  * Get status of user's inference session
  */
 export function getUserInferenceStatus(userId) {
@@ -198,6 +266,7 @@ export function getUserInferenceStatus(userId) {
     return { 
       isActive: false, 
       isPaused: false,
+      isManualMode: false,
       message: "No active session"
     };
   }
@@ -205,9 +274,33 @@ export function getUserInferenceStatus(userId) {
   return {
     isActive: session.isActive,
     isPaused: session.isPaused,
+    isManualMode: session.isManualMode || false,
     startedAt: session.startedAt,
     message: session.isPaused ? "Session paused" : "Session active"
   };
+}
+
+/**
+ * Toggle manual control mode
+ */
+export function toggleManualMode(userId, enabled) {
+  const session = activeInferenceSessions.get(userId.toString());
+  
+  if (!session || !session.isActive) {
+    return { success: false, message: "No active session" };
+  }
+
+  session.isManualMode = enabled;
+  activeInferenceSessions.set(userId.toString(), session);
+  
+  if (enabled) {
+    console.log(`🎮 Manual mode ENABLED for user ${userId}`);
+    return { success: true, message: "Manual mode enabled" };
+  } else {
+    console.log(`🤖 Manual mode DISABLED for user ${userId}`);
+    manualEmotionQueue.delete(userId.toString()); // Clear queue
+    return { success: true, message: "Manual mode disabled, back to auto inference" };
+  }
 }
 
 /**

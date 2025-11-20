@@ -6,6 +6,8 @@ import {
   pauseUserInferenceSession,
   resumeUserInferenceSession,
   getUserInferenceStatus,
+  toggleManualMode,
+  queueManualEmotion,
 } from "../services/inferenceService.js";
 
 // Ambil semua sesi milik user yg login
@@ -214,6 +216,58 @@ export function getInferenceStatus(req, res) {
   } catch (err) {
     return res.status(500).json({
       message: "Failed to get inference status",
+      error: err.message,
+    });
+  }
+}
+
+/**
+ * Toggle manual control mode
+ */
+export function toggleManualControl(req, res) {
+  try {
+    const userId = req.userId;
+    const { enabled } = req.body;
+    
+    const result = toggleManualMode(userId, enabled);
+    
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to toggle manual mode",
+      error: err.message,
+    });
+  }
+}
+
+/**
+ * Set manual emotion (queues emotion for next inference cycle)
+ */
+export function setManualEmotion(req, res) {
+  try {
+    const userId = req.userId;
+    const { emotion } = req.body;
+    
+    if (!["Positif", "Netral", "Negatif"].includes(emotion)) {
+      return res.status(400).json({
+        message: "Invalid emotion. Must be Positif, Netral, or Negatif",
+      });
+    }
+    
+    queueManualEmotion(userId, emotion);
+    
+    // Broadcast via Socket.IO
+    const io = req.app.get("io");
+    io.emit("emotion-override", { userId: userId.toString(), emotion });
+    
+    return res.status(200).json({
+      success: true,
+      message: "Manual emotion queued",
+      emotion,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to set manual emotion",
       error: err.message,
     });
   }

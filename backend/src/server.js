@@ -1,4 +1,6 @@
 import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -6,11 +8,10 @@ import noteRoutes from "./routes/notesRoutes.js";
 import eegSessionRoutes from "./routes/eegSessionRoutes.js";
 import cameraCaptureRoutes from "./routes/cameraCaptureRoutes.js";
 import validateCaptureRoutes from "./routes/validateCaptureRoutes.js";
+import remoteControlRoutes from "./routes/remoteControlRoutes.js";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-// ❌ REMOVED: Automatic inference service (only active users should trigger inference)
-// import { startInferenceService } from "./services/inferenceService.js";
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +22,17 @@ dotenv.config();
 
 // Inisialisasi express app
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Make io accessible to routes
+app.set("io", io);
+
 app.use(cors());    
 
 // Serve static files from uploads directory (for camera captures)
@@ -44,14 +56,26 @@ connectDB();
 app.use("/api/sessions", eegSessionRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/remote", remoteControlRoutes); // Public remote control (no auth)
+
+// Socket.IO for remote control
+io.on("connection", (socket) => {
+  console.log("🎮 Remote controller connected:", socket.id);
+
+  socket.on("manual-emotion", (data) => {
+    console.log("📡 Broadcasting manual emotion:", data);
+    io.emit("emotion-override", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🎮 Remote controller disconnected:", socket.id);
+  });
+});
 
 // Jalankan server
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`✅ Server started on PORT: ${PORT}`);
   console.log(`ℹ️  Inference runs on-demand only (via POST /api/sessions/inference)`);
-  
-  // ❌ DISABLED: Automatic inference for all users every 10 seconds
-  // Only authenticated users trigger their own inference via API endpoint
-  // startInferenceService();
+  console.log(`🎮 Socket.IO remote control enabled`);
 });

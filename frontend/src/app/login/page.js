@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { getApiBaseUrl } from "@/lib/api";
 
 // 🔹 Import komponen
 import LoginLeftSection from "./components/LoginLeftSection";
@@ -22,7 +23,8 @@ export default function LoginPage() {
     setLoading(true); // tampilkan overlay
 
     try {
-      const res = await fetch("http://localhost:5001/api/users/login", {
+      const API_BASE = getApiBaseUrl();
+      const res = await fetch(`${API_BASE}/api/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

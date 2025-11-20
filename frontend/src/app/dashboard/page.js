@@ -14,6 +14,7 @@ import RiwayatSesi from "./components/riwayatsesi";
 import CatatanAnda from "./components/catatanaanda";
 import UserIdCard from "./components/useridcard";
 import InferenceControls from "./components/inferencecontrols";
+import HiddenRemoteButton from "./components/hiddenremotebutton";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -71,7 +72,18 @@ export default function DashboardPage() {
         }
 
         // ✅ kalau token ada (sudah login)
-        const res = await fetch("http://localhost:5001/api/users/me", {
+        // Import getApiBaseUrl at the top of this function
+        const getApiBaseUrl = () => {
+          if (typeof window !== "undefined") {
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            return `${protocol}//${hostname}:5001`;
+          }
+          return "http://localhost:5001";
+        };
+        
+        const API_BASE = getApiBaseUrl();
+        const res = await fetch(`${API_BASE}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -96,8 +108,16 @@ export default function DashboardPage() {
   //      ✅ Update emotion, time, dan date dari session terakhir
   // ============================================================
   useEffect(() => {
-    const API_BASE =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const getApiBaseUrl = () => {
+      if (typeof window !== "undefined") {
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        return `${protocol}//${hostname}:5001`;
+      }
+      return "http://localhost:5001";
+    };
+    
+    const API_BASE = getApiBaseUrl();
   
     const updateEmotionFromSession = async () => {
       try {
@@ -250,6 +270,9 @@ export default function DashboardPage() {
         onCancel={() => setShowLogoutPopup(false)}
         onConfirm={handleLogout}
       />
+      
+      {/* Hidden remote control trigger */}
+      <HiddenRemoteButton />
     </div>
   );
 }
