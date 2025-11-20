@@ -217,12 +217,7 @@ export default function DashboardPage() {
 
           {/* Baris atas: Emosi + Rekaman */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <EmosiTerakhir
-              emotion={emotion}
-              time={time}
-              date={date}
-              firstName={firstName}
-            />
+            <EmosiTerakhir firstName={firstName} />
             <RekamFoto />
           </div>
 
