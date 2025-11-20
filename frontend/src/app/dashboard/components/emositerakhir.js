@@ -106,7 +106,17 @@ export default function EmosiTerakhir({ firstName }) {
               </div>
               <div>
                 <p className="text-[#2D3570] text-sm font-semibold">Emosi</p>
-                <p className="text-[#FFD84D] text-base font-bold -mt-1">
+                <p
+                  className={`text-base font-bold -mt-1 ${
+                    emotion === "Positif"
+                      ? "text-[#FFD84D]"     // kuning
+                      : emotion === "Netral"
+                      ? "text-[#2D90FF]"     // biru
+                      : emotion === "Negatif"
+                      ? "text-[#FF4D4D]"     // merah
+                      : ""
+                  }`}
+                >
                   {loading ? "..." : emotion}
                 </p>
               </div>

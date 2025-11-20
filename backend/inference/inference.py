@@ -1,264 +1,208 @@
 import json
 import os
 import sys
+import time
 import numpy as np
 import joblib
-from collections import deque
 import warnings
-warnings.filterwarnings('ignore')
+from collections import deque
 
+# Import from your modular files
 from feature_extraction import extract_sampling_invariant_features
-from simulation import simulate_realistic_eeg
+# We will use the simulation as a fallback if Bluetooth fails
+from simulation import get_eeg_data 
+
+warnings.filterwarnings('ignore')
 
 # ============================
 #  BLUETOOTH COM PORT READER
 # ============================
 def read_eeg_from_serial(port='COM3', baudrate=115200, duration=2.0, fs=60):
     """
-    Read EEG data from ESP32 Bluetooth COM port.
-    
-    Args:
-        port: COM port (e.g., 'COM3' on Windows)
-        baudrate: Serial baudrate (default 115200)
-        duration: Duration to read (seconds)
-        fs: Expected sampling frequency (Hz)
-    
-    Returns:
-        eeg_data: numpy array of EEG samples, or None if failed
+    Reads real data from ESP32. Returns None if it fails/timeouts.
+    Logs to stderr so it doesn't break JSON output.
     """
     try:
         import serial
-        import time
         
+        # Open Serial Port
         ser = serial.Serial(port, baudrate, timeout=1)
-        time.sleep(0.1)  # Wait for connection
+        time.sleep(0.1) # Stabilization
         
         eeg_samples = []
         target_samples = int(fs * duration)
         start_time = time.time()
         
-        print(f"📡 Reading from {port} at {baudrate} baud...", file=sys.stderr)
+        # Log to stderr
+        print(f"📡 Connecting to {port}...", file=sys.stderr)
         
         while len(eeg_samples) < target_samples:
-            # Check timeout (max 5 seconds to collect samples)
+            # 5 Second Timeout
             if time.time() - start_time > 5.0:
-                print(f"⚠️  Timeout reading from serial port", file=sys.stderr)
+                print(f"⚠️ Serial Timeout", file=sys.stderr)
                 break
             
             if ser.in_waiting > 0:
-                line = ser.readline().decode('utf-8', errors='ignore').strip()
-                
-                # Parse format: "timestamp,index,value" or "index,value,voltage"
-                parts = line.split(',')
-                if len(parts) >= 3:
-                    try:
-                        # Try last column as voltage value
-                        voltage = float(parts[-1])
-                        eeg_samples.append(voltage)
-                    except ValueError:
-                        continue
-        
+                try:
+                    line = ser.readline().decode('utf-8', errors='ignore').strip()
+                    # Expecting: "index,value,voltage" or just "voltage"
+                    parts = line.split(',')
+                    if len(parts) >= 1:
+                        # Take the last value as the voltage/ADC reading
+                        val = float(parts[-1])
+                        eeg_samples.append(val)
+                except ValueError:
+                    continue
+
         ser.close()
         
-        if len(eeg_samples) >= target_samples * 0.8:  # At least 80% of samples
-            print(f"✅ Read {len(eeg_samples)} samples from serial", file=sys.stderr)
+        if len(eeg_samples) >= target_samples * 0.5: # Accept if we have at least 50% data
+            print(f"✅ Received {len(eeg_samples)} samples", file=sys.stderr)
+            # Pad or trim to match exact window size if necessary, or return as is
             return np.array(eeg_samples[:target_samples])
         else:
-            print(f"⚠️  Insufficient samples: {len(eeg_samples)}/{target_samples}", file=sys.stderr)
             return None
-            
+
     except ImportError:
-        print("⚠️  pyserial not installed (pip install pyserial)", file=sys.stderr)
+        print("⚠️ pyserial not installed", file=sys.stderr)
         return None
     except Exception as e:
-        print(f"⚠️  Serial read error: {e}", file=sys.stderr)
+        print(f"⚠️ Serial Error: {e}", file=sys.stderr)
         return None
 
 # ============================
 #  EMOTION CLASSIFIER
 # ============================
 class EmotionClassifier:
-    """Real-time emotion classifier for differential EEG signals."""
-    
-    def __init__(self, model_path='emotion_classifier.joblib', fs=60):
+    def __init__(self, model_path='simple_emotion_classifier_xgb.joblib', fs=250):
         self.fs = fs
+        self.model = None
+
+        # Resolve path relative to this inference file
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_dir, "model", model_path)
         
-        # Load trained model
         try:
+            # Load Model
             checkpoint = joblib.load(model_path)
             self.model = checkpoint['model']
-            self.scaler = checkpoint['scaler']
-            self.label_map = checkpoint['label_map']
-            self.feature_names = checkpoint['feature_names']
-            
-            print(f"✅ Model loaded: {len(self.feature_names)} features, {len(self.label_map)} classes", file=sys.stderr)
+            self.scaler = checkpoint.get('scaler', None)
+            self.label_map = checkpoint.get('label_map', None)
+            self.feature_names = checkpoint.get('feature_names', [])
+            print("✓ Model loaded", file=sys.stderr)
         except Exception as e:
-            raise RuntimeError(f"Failed to load model: {e}")
-    
-    def predict(self, raw_eeg_window):
-        """
-        Predict emotion from raw EEG window.
-        
-        Args:
-            raw_eeg_window: 1D numpy array of differential EEG voltage (μV)
-        
-        Returns:
-            prediction: Emotion label (str)
-            probabilities: Dictionary of class probabilities
-        """
-        # Validate input
-        if len(raw_eeg_window) < self.fs * 0.5:
-            raise ValueError(f"Window too short: need at least {self.fs*0.5} samples (0.5s)")
-        
-        # Extract features
-        extracted_features = extract_sampling_invariant_features(raw_eeg_window, self.fs)
-        
-        # Align features to model's expected feature vector
-        feature_vector = np.zeros(self.scaler.n_features_in_)
-        
-        for i, feature_name in enumerate(self.feature_names):
-            if feature_name in extracted_features:
-                feature_vector[i] = extracted_features[feature_name]
-            # Heuristic mappings for common statistical features
-            elif 'mean' in feature_name and 'mean' in extracted_features:
-                feature_vector[i] = extracted_features['mean']
-            elif 'std' in feature_name and 'std' in extracted_features:
-                feature_vector[i] = extracted_features['std']
-            elif 'min' in feature_name and 'min' in extracted_features:
-                feature_vector[i] = extracted_features['min']
-            elif 'max' in feature_name and 'max' in extracted_features:
-                feature_vector[i] = extracted_features['max']
-        
-        # Scale and predict
-        feature_vector_scaled = self.scaler.transform(feature_vector.reshape(1, -1))
-        pred_class = self.model.predict(feature_vector_scaled)[0]
-        pred_proba = self.model.predict_proba(feature_vector_scaled)[0]
-        
-        # Map to labels
-        prediction = self.label_map[pred_class]
-        probabilities = {
-            self.label_map[i]: float(prob)
-            for i, prob in enumerate(pred_proba)
-        }
-        
-        return prediction, probabilities
+            print(f"⚠ Model load failed ({e})", file=sys.stderr)
+            self.mock_mode = True
+
+    def predict(self, clean_eeg_window):
+        # Feature Extraction
+        features = extract_sampling_invariant_features(clean_eeg_window, self.fs)
+
+        # 1. Mock Mode (if model failed to load)
+        if hasattr(self, 'mock_mode'):
+            # Simple logic for fallback
+            return "Netral", {"Netral": 0.8, "Positif": 0.1, "Negatif": 0.1}
+
+        # 2. Real Prediction
+        try:
+            # Align features
+            if len(self.feature_names) > 0:
+                feature_vector = [features.get(name, 0.0) for name in self.feature_names]
+            else:
+                feature_vector = list(features.values())
+
+            X = np.array([feature_vector])
+            
+            # Scaling
+            if hasattr(self, 'scaler') and self.scaler is not None:
+                X = self.scaler.transform(X)
+
+            # Predict
+            prediction_index = self.model.predict(X)[0]
+            probabilities = self.model.predict_proba(X)[0]
+
+            # Label Mapping
+            if self.label_map:
+                prediction_label = self.label_map.get(prediction_index, str(prediction_index))
+                # Double check str/int keys
+                if prediction_label == str(prediction_index):
+                     prediction_label = self.label_map.get(str(prediction_index), str(prediction_index))
+            else:
+                prediction_label = str(prediction_index)
+
+            # Probability Dict
+            classes = self.model.classes_
+            prob_dict = {str(c): float(p) for c, p in zip(classes, probabilities)}
+
+            return prediction_label, prob_dict
+
+        except Exception as e:
+            print(f"Prediction Logic Error: {e}", file=sys.stderr)
+            return "Error", {"Error": 1.0}
 
 # ============================
-#  STREAMING BUFFER
-# ============================
-class StreamingEEGBuffer:
-    """Circular buffer for streaming EEG data with sliding window prediction."""
-    
-    def __init__(self, classifier, window_size_seconds=2.0):
-        self.classifier = classifier
-        self.fs = classifier.fs
-        self.window_size = int(window_size_seconds * self.fs)
-        self.buffer = deque(maxlen=self.window_size)
-    
-    def add_samples(self, samples):
-        """Add multiple EEG samples to buffer."""
-        for sample in samples:
-            self.buffer.append(sample)
-    
-    def is_ready(self):
-        """Check if buffer has enough samples for prediction."""
-        return len(self.buffer) >= self.window_size
-    
-    def predict(self):
-        """Predict emotion from current buffer window."""
-        if not self.is_ready():
-            return None
-        
-        window = np.array(self.buffer)
-        return self.classifier.predict(window)
-
-# ============================
-#  MAIN INFERENCE FUNCTION
+#  MAIN EXECUTION
 # ============================
 def run_inference():
-    """
-    Run emotion inference with Bluetooth COM port fallback to simulation.
-    """
-    # Configuration
-    FS = 60  # Affectra sampling rate
-    WINDOW_DURATION = 2.0  # 2-second window
-    COM_PORT = 'COM3'  # Default COM port for ESP32 Bluetooth
+    # CONFIG
+    FS = 60  # Match your hardware
+    WINDOW = 2.0
+    COM_PORT = 'COM3' 
     
-    # Load model
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    MODEL_PATH = os.path.join(BASE_DIR, "model", "emotion_classifier.joblib")
+    # 1. INIT CLASSIFIER
+    classifier = EmotionClassifier(fs=FS)
     
-    try:
-        classifier = EmotionClassifier(MODEL_PATH, fs=FS)
-    except RuntimeError as e:
-        # Fallback: Output error as JSON for Node.js to handle
-        error_result = {
-            "prediction": "Netral",
-            "probabilities": [0.33, 0.34, 0.33],
-            "error": str(e),
-            "source": "model_error"
-        }
-        print(json.dumps(error_result))
-        return
+    # 2. ACQUIRE DATA (Serial -> Fallback to Simulation)
+    eeg_data = read_eeg_from_serial(port=COM_PORT, fs=FS, duration=WINDOW)
     
-    # Try to read from Bluetooth COM port
-    print(f"🔍 Attempting to read EEG from {COM_PORT}...", file=sys.stderr)
-    eeg_data = read_eeg_from_serial(COM_PORT, duration=WINDOW_DURATION, fs=FS)
-    
-    # Fallback to simulation if COM port fails
+    source = "bluetooth"
+    true_state = "unknown"
+
     if eeg_data is None:
-        print("⚠️  Bluetooth unavailable, using EEG simulation", file=sys.stderr)
-        eeg_data = simulate_realistic_eeg(fs=FS, seconds=WINDOW_DURATION)
-        data_source = "simulation"
+        print("⚠️ Fallback to Simulation", file=sys.stderr)
+        # Use the simulation module we made previously
+        # Note: simulate_raw_adc_eeg returns (data, state)
+        # We use the wrapper get_eeg_data from simulation.py
+        clean_data, source, true_state = get_eeg_data(
+            use_simulation=True, 
+            fs=FS, 
+            duration=WINDOW
+        )
     else:
-        data_source = "bluetooth"
-    
-    # Create streaming buffer and predict
-    buffer = StreamingEEGBuffer(classifier, window_size_seconds=WINDOW_DURATION)
-    buffer.add_samples(eeg_data)
-    
-    if buffer.is_ready():
-        prediction, probabilities = buffer.predict()
-        
-        # Translate English labels to Indonesian for MongoDB schema
-        label_translation = {
-            "POSITIVE": "Positif",
-            "NEUTRAL": "Netral",
-            "NEGATIVE": "Negatif",
-            "positive": "Positif",
-            "neutral": "Netral",
-            "negative": "Negatif",
-            "Positive": "Positif",
-            "Neutral": "Netral",
-            "Negative": "Negatif"
+        # We have real data, but it needs cleaning (Notch filter etc)
+        from feature_extraction import process_raw_adc_signal
+        clean_data = process_raw_adc_signal(eeg_data, fs=FS)
+
+    # 3. PREDICT
+    if clean_data is not None and len(clean_data) > 0:
+        prediction, probabilities = classifier.predict(clean_data)
+
+        # LABEL TRANSLATION (English -> Indonesian)
+        translation_map = {
+            "neutral": "Netral", "calm": "Netral",
+            "stressed": "Negatif", "negative": "Negatif",
+            "positive": "Positif"
         }
-        
-        # Apply translation (fallback to original if not found)
-        translated_prediction = label_translation.get(prediction, prediction)
-        
-        # Format output for Node.js
+        # Normalize keys to lowercase for lookup
+        pred_key = prediction.lower()
+        final_label = translation_map.get(pred_key, prediction)
+
+        # 4. CONSTRUCT FINAL JSON RESULT
         result = {
-            "prediction": translated_prediction,
-            "probabilities": list(probabilities.values()),
-            "source": data_source,
-            "samples": len(eeg_data)
+            "prediction": final_label,
+            "probabilities": list(probabilities.values()), # Node usually likes simple arrays
+            "probabilities_dict": probabilities,
+            "source": source,
+            "true_state_debug": true_state,
+            "samples_processed": len(clean_data)
         }
         
+        # 5. OUTPUT TO STDOUT (Only this goes to Node)
         print(json.dumps(result))
+        sys.stdout.flush() # Ensure it sends immediately
     else:
-        # Not enough samples
-        error_result = {
-            "prediction": "Netral",
-            "probabilities": [0.33, 0.34, 0.33],
-            "error": "Insufficient samples",
-            "source": "error"
-        }
-        print(json.dumps(error_result))
+        error_res = {"error": "No data acquired", "prediction": "Netral"}
+        print(json.dumps(error_res))
 
-
-# ============================
-#  ENTRY POINT
-# ============================
 if __name__ == "__main__":
     run_inference()
-

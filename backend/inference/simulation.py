@@ -1,97 +1,74 @@
 import numpy as np
+# Import the cleaning function from your other module
+from feature_extraction import process_raw_adc_signal
 
-def simulate_realistic_eeg(fs=60, seconds=2.0):
+# ============================
+#  SIMULATION
+# ============================
+def simulate_raw_adc_eeg(fs=60, seconds=2.0, emotion_state=None):
     """
-    Simulate realistic single-channel differential EEG signal with emotion-driven variability.
+    Simulates RAW ADC values with controllable emotion states.
     
     Args:
-        fs: Sampling frequency (Hz) - default 60 Hz for Affectra
-        seconds: Duration of signal (seconds) - default 2s for streaming window
-    
-    Returns:
-        eeg_signal: 1D numpy array of simulated differential EEG (μV)
+        emotion_state: None (random), 'calm', 'stressed', or 'neutral'
     """
     N = int(fs * seconds)
     t = np.linspace(0, seconds, N, endpoint=False)
-    
-    # Randomly select emotion profile for more diverse results
-    emotion_profiles = {
-        "positive": {
-            "alpha": (8, 20),   # High alpha power (relaxed, positive)
-            "beta": (2, 8),     # Low beta (calm)
-            "theta": (3, 8),    # Moderate theta
-            "delta": (4, 10),   # Low delta
-        },
-        "neutral": {
-            "alpha": (6, 14),   # Moderate alpha
-            "beta": (4, 12),    # Moderate beta
-            "theta": (4, 10),   # Moderate theta
-            "delta": (5, 12),   # Moderate delta
-        },
-        "negative": {
-            "alpha": (3, 8),    # Low alpha (stressed, anxious)
-            "beta": (8, 20),    # High beta (alert, anxious)
-            "theta": (6, 15),   # Higher theta (emotional processing)
-            "delta": (6, 15),   # Higher delta
-        }
-    }
-    
-    # Randomly select emotion profile with equal probability
-    profile_key = np.random.choice(["positive", "neutral", "negative"])
-    profile = emotion_profiles[profile_key]
-    
-    # Randomize band frequencies within physiological ranges
-    bands = {
-        "delta":  np.random.uniform(1, 3),
-        "theta":  np.random.uniform(4, 7),
-        "alpha":  np.random.uniform(8, 12),
-        "beta":   np.random.uniform(13, 25),
-    }
-    
-    # Randomize amplitudes based on emotion profile
-    amps = {
-        "delta":  np.random.uniform(*profile["delta"]),
-        "theta":  np.random.uniform(*profile["theta"]),
-        "alpha":  np.random.uniform(*profile["alpha"]),
-        "beta":   np.random.uniform(*profile["beta"]),
-    }
-    
-    # Add random phase variations for each band
-    phases = {
-        "delta": np.random.rand() * 2 * np.pi,
-        "theta": np.random.rand() * 2 * np.pi,
-        "alpha": np.random.rand() * 2 * np.pi,
-        "beta": np.random.rand() * 2 * np.pi,
-    }
-    
-    # Generate multi-band signal with random harmonics for complexity
-    eeg_signal = (
-        amps["delta"] * np.sin(2*np.pi*bands["delta"]*t + phases["delta"]) +
-        amps["theta"] * np.sin(2*np.pi*bands["theta"]*t + phases["theta"]) +
-        amps["alpha"] * np.sin(2*np.pi*bands["alpha"]*t + phases["alpha"]) +
-        amps["beta"]  * np.sin(2*np.pi*bands["beta"] *t + phases["beta"])
-    )
-    
-    # Add harmonics for more realistic frequency content
-    for band, freq in bands.items():
-        harmonic_amp = amps[band] * np.random.uniform(0.1, 0.3)
-        harmonic_freq = freq * 2  # First harmonic
-        eeg_signal += harmonic_amp * np.sin(2*np.pi*harmonic_freq*t + np.random.rand()*2*np.pi)
-    
-    # Add realistic artifacts with more variation
-    drift = np.cumsum(np.random.randn(N) * np.random.uniform(0.0005, 0.002))  # Variable baseline drift
-    noise = np.random.randn(N) * np.random.uniform(1.0, 3.0)  # Variable noise level
-    
-    # Occasional "blink" artifacts (random spikes)
-    if np.random.rand() > 0.7:  # 30% chance of artifact
-        artifact_idx = np.random.randint(N//4, 3*N//4)  # Middle 50% of signal
-        artifact_width = np.random.randint(5, 15)
-        artifact_magnitude = np.random.uniform(20, 50) * np.random.choice([-1, 1])
-        eeg_signal[artifact_idx:artifact_idx+artifact_width] += artifact_magnitude
-    
-    eeg_signal = eeg_signal + drift + noise
-    
-    # Random baseline offset
-    eeg_signal += np.random.uniform(-5, 5)
-    
-    return eeg_signal
+
+    # Choose emotion state
+    if emotion_state is None:
+        state = np.random.choice(["calm", "stressed", "neutral"])
+    else:
+        state = emotion_state
+
+    # Generate different brainwave patterns
+    if state == "calm":
+        # Alpha waves (8-12Hz) dominant
+        true_eeg_uv = 40 * np.sin(2*np.pi*10*t) + 10 * np.sin(2*np.pi*2*t)
+        true_eeg_uv += np.random.normal(0, 3, N)
+    elif state == "stressed":
+        # Beta waves (13-30Hz) dominant
+        # NOTE: At fs=60, Beta (up to 30Hz) is barely visible. 
+        # We emphasize the lower end of Beta (14-20Hz) so it doesn't get lost.
+        true_eeg_uv = 35 * np.sin(2*np.pi*15*t) + 18 * np.sin(2*np.pi*6*t)
+        true_eeg_uv += np.random.normal(0, 8, N)
+    else:  # neutral
+        # Mixed
+        true_eeg_uv = 20 * np.sin(2*np.pi*8*t) + 20 * np.sin(2*np.pi*15*t)
+        true_eeg_uv += np.random.normal(0, 5, N)
+    # --- THE FIX: SMART NOISE INJECTION ---
+    # Only add 50Hz hum if Sampling Rate > 100Hz.
+    # Otherwise, it aliases to 10Hz and ruins the data.
+    if fs > 100:
+        mains_hum_uv = 400 * np.sin(2*np.pi*50*t + np.random.rand()*2*np.pi)
+    else:
+        # Add simple white noise instead of hum for low FS
+        mains_hum_uv = np.random.normal(0, 10, N)
+    input_signal_uv = true_eeg_uv + mains_hum_uv
+
+    # Convert to ADC
+    GAIN = 612.8
+    V_REF = 3.3
+    ADC_RES = 4095.0
+
+    amplified_volts = (input_signal_uv / 1_000_000) * GAIN
+    bias_volts = 0.802
+    total_volts = np.clip(amplified_volts + bias_volts, 0, V_REF)
+    raw_adc = np.round((total_volts / V_REF) * ADC_RES).astype(int)
+
+    return raw_adc, state
+
+# ============================
+#  BLUETOOTH / SIMULATION READER
+# ============================
+def get_eeg_data(use_simulation=False, fs=60, duration=2.0, emotion_state=None):
+    """
+    Acquires data either from COM port or Simulation.
+    """
+    if use_simulation:
+        raw_adc, true_state = simulate_raw_adc_eeg(fs=fs, seconds=duration, emotion_state=emotion_state)
+        # Use the imported utility to clean the data
+        clean_data = process_raw_adc_signal(raw_adc, fs=fs)
+        return clean_data, "simulation", true_state
+
+    return None, "error", None
